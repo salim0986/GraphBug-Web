@@ -3,7 +3,7 @@ import { Webhooks } from "@octokit/webhooks";
 import { eq, and } from "drizzle-orm";
 
 const webhooks = new Webhooks({
-  secret: process.env.NEXT_PUBLIC_GITHUB_WEBHOOK_SECRET!,
+  secret: process.env.GITHUB_WEBHOOK_SECRET!,
 });
 
 export async function POST(req: Request) {
@@ -188,17 +188,256 @@ async function handleInstallationRepositoriesEvent(payload: any) {
 
 // Handle pull request events
 async function handlePullRequestEvent(payload: any) {
-  const { action, pull_request, installation } = payload;
+  const { action, pull_request, installation, repository } = payload;
 
+  // Trigger review on PR open or update (new commits pushed)
   if (action === "opened" || action === "synchronize") {
     console.log(`🔍 PR ${action}: ${pull_request.html_url}`);
     
-    // TODO: Trigger AI review here
-    // For now, just log it
-    console.log(`ℹ️ Would trigger AI review for PR #${pull_request.number} in ${pull_request.base.repo.full_name}`);
+    // Find the installation record
+    const [installationRecord] = await db
+      .select()
+      .from(githubInstallations)
+      .where(eq(githubInstallations.installationId, installation.id));
+
+    if (!installationRecord) {
+      console.error(`❌ Installation ${installation.id} not found`);
+      return new Response("Installation not found", { status: 404 });
+    }
+
+    // Check if this repository is in our database and has been ingested
+    const [repoRecord] = await db
+      .select()
+      .from(githubRepositories)
+      .where(
+        and(
+          eq(githubRepositories.installationId, installationRecord.id),
+          eq(githubRepositories.repoId, repository.id)
+        )
+      );
+
+    if (!repoRecord) {
+      console.log(`ℹ️ Repository ${repository.full_name} not found in database, skipping review`);
+      return new Response("OK", { status: 200 });
+    }
+
+    if (repoRecord.ingestionStatus !== "completed") {
+      console.log(`⚠️ Repository ${repository.full_name} not yet ingested (status: ${repoRecord.ingestionStatus}), skipping review`);
+      return new Response("OK", { status: 200 });
+    }
+
+    // Trigger AI code review
+    console.log(`🤖 Triggering AI review for PR #${pull_request.number} in ${repository.full_name}`);
+    await triggerAICodeReview(repoRecord.id, pull_request, installation.id);
+  }
+
+  // Trigger auto-ingestion on PR merge (Phase 8)
+  if (action === "closed" && pull_request.merged === true) {
+    console.log(`✅ PR merged: ${pull_request.html_url}`);
+    
+    // Find the installation record
+    const [installationRecord] = await db
+      .select()
+      .from(githubInstallations)
+      .where(eq(githubInstallations.installationId, installation.id));
+
+    if (!installationRecord) {
+      console.error(`❌ Installation ${installation.id} not found`);
+      return new Response("Installation not found", { status: 404 });
+    }
+
+    // Check if this repository is in our database
+    const [repoRecord] = await db
+      .select()
+      .from(githubRepositories)
+      .where(
+        and(
+          eq(githubRepositories.installationId, installationRecord.id),
+          eq(githubRepositories.repoId, repository.id)
+        )
+      );
+
+    if (!repoRecord) {
+      console.log(`ℹ️ Repository ${repository.full_name} not found in database, skipping auto-ingestion`);
+      return new Response("OK", { status: 200 });
+    }
+
+    // Trigger auto-ingestion to update permanent database
+    console.log(`📦 Triggering auto-ingestion for ${repository.full_name} after PR #${pull_request.number} merge`);
+    await triggerAutoIngestion(repoRecord, repository, installation.id);
   }
 
   return new Response("OK", { status: 200 });
+}
+
+// Trigger AI-powered code review for a pull request
+async function triggerAICodeReview(repoDbId: string, pullRequest: any, installationId: number) {
+  try {
+    console.log(`📝 Starting AI review for PR #${pullRequest.number}: ${pullRequest.title}`);
+    
+    // Get PR details
+    const prNumber = pullRequest.number;
+    const prUrl = pullRequest.html_url;
+    const repoFullName = pullRequest.base.repo.full_name;
+    const [owner, repo] = repoFullName.split('/');
+    
+    console.log(`✅ AI review queued for PR #${prNumber} in ${repoFullName}`);
+    console.log(`   📎 PR URL: ${prUrl}`);
+    console.log(`   🔬 Changed files: ${pullRequest.changed_files || 'unknown'}`);
+    console.log(`   ➕ Additions: +${pullRequest.additions || 0}`);
+    console.log(`   ➖ Deletions: -${pullRequest.deletions || 0}`);
+    
+    // Call PR processing endpoint to fetch and store PR data
+    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+    const processEndpoint = `${baseUrl}/api/pr/process`;
+    
+    console.log(`🔄 Calling PR processing endpoint: ${processEndpoint}`);
+    
+    const processResponse = await fetch(processEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-call': 'true',
+      },
+      body: JSON.stringify({
+        owner,
+        repo,
+        prNumber,
+        installationId,
+        action: 'opened', // or 'synchronize' based on webhook event
+      }),
+    });
+
+    if (!processResponse.ok) {
+      const errorData = await processResponse.json();
+      console.error(`❌ PR processing failed:`, errorData);
+      throw new Error(`PR processing failed: ${errorData.error || processResponse.statusText}`);
+    }
+
+    const processData = await processResponse.json();
+    console.log(`✅ PR data processed successfully (DB ID: ${processData.pullRequestId})`);
+    console.log(`   📊 Stats: ${processData.stats.files} files, ${processData.stats.changes} changes`);
+    console.log(`   🎯 Complexity: ${processData.complexity.toFixed(2)}`);
+    console.log(`   🔍 Deep review required: ${processData.metadata.requiresDeepReview}`);
+    
+    // Trigger AI review workflow in ai-service
+    console.log(`🚀 Triggering AI review workflow in ai-service...`);
+    
+    try {
+      const aiServiceUrl = process.env.NEXT_PUBLIC_AI_SERVICE_URL || 'http://localhost:8000';
+      const reviewResponse = await fetch(`${aiServiceUrl}/review`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          owner,
+          repo,
+          pr_number: prNumber,
+          installation_id: installationId.toString(),
+          pull_request_id: processData.pullRequestId,
+          context: processData.context,
+        }),
+      });
+
+      if (!reviewResponse.ok) {
+        const errorText = await reviewResponse.text();
+        console.error(`❌ AI service returned error: ${reviewResponse.status} ${errorText}`);
+        throw new Error(`AI service error: ${reviewResponse.status}`);
+      }
+
+      const reviewData = await reviewResponse.json();
+      console.log(`✅ AI review workflow started:`, reviewData);
+      console.log(`   🔑 Review ID: ${reviewData.review_id || 'N/A'}`);
+      console.log(`   ⏱️  Estimated time: ${reviewData.estimated_time || 'Unknown'}`);
+    } catch (aiError) {
+      console.error(`❌ Failed to trigger AI service:`, aiError);
+      console.error(`   Make sure ai-service is running on ${process.env.NEXT_PUBLIC_AI_SERVICE_URL || 'http://localhost:8000'}`);
+      // Don't throw - we've already saved the PR, just log the error
+    }
+    
+  } catch (error) {
+    console.error(`❌ Failed to trigger AI review:`, error);
+    throw error;
+  }
+}
+
+// Trigger auto-ingestion after PR merge (Phase 8)
+async function triggerAutoIngestion(repoRecord: any, repository: any, installationId: number) {
+  try {
+    console.log(`📦 Starting auto-ingestion for ${repository.full_name}`);
+    console.log(`   📊 Current ingestion status: ${repoRecord.ingestionStatus}`);
+    
+    const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+    
+    // Update ingestion status to "in_progress"
+    await db
+      .update(githubRepositories)
+      .set({
+        ingestionStatus: "in_progress",
+        ingestionStartedAt: new Date(),
+      })
+      .where(eq(githubRepositories.id, repoRecord.id));
+    
+    console.log(`🔄 Ingestion status updated to "in_progress"`);
+    
+    // Construct clone URL with authentication
+    // For GitHub App, use installation token (we'll pass installation_id to ai-service)
+    const cloneUrl = repository.clone_url;
+    
+    // Call ai-service /ingest endpoint
+    const ingestResponse = await fetch(`${AI_SERVICE_URL}/ingest`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        repo_url: cloneUrl,
+        repo_id: repoRecord.id,
+        installation_id: installationId.toString(),
+      }),
+    });
+
+    if (!ingestResponse.ok) {
+      const errorText = await ingestResponse.text();
+      console.error(`❌ AI service ingestion failed: ${ingestResponse.status} ${errorText}`);
+      
+      // Update ingestion status to "failed"
+      await db
+        .update(githubRepositories)
+        .set({
+          ingestionStatus: "failed",
+          ingestionCompletedAt: new Date(),
+        })
+        .where(eq(githubRepositories.id, repoRecord.id));
+      
+      throw new Error(`AI service ingestion failed: ${ingestResponse.status}`);
+    }
+
+    const ingestData = await ingestResponse.json();
+    console.log(`✅ Auto-ingestion queued:`, ingestData);
+    console.log(`   🔑 Repo ID: ${repoRecord.id}`);
+    console.log(`   📦 Status: ${ingestData.status}`);
+    
+    // Note: Ingestion happens in background, status will be updated by ai-service webhook or polling
+    console.log(`⏳ Ingestion running in background for ${repository.full_name}`);
+    
+  } catch (error) {
+    console.error(`❌ Failed to trigger auto-ingestion:`, error);
+    
+    // Update ingestion status to "failed"
+    try {
+      await db
+        .update(githubRepositories)
+        .set({
+          ingestionStatus: "failed",
+          ingestionCompletedAt: new Date(),
+        })
+        .where(eq(githubRepositories.id, repoRecord.id));
+    } catch (dbError) {
+      console.error(`❌ Failed to update ingestion status:`, dbError);
+    }
+  }
 }
 
 // Helper: Add repositories and trigger ingestion
@@ -305,8 +544,8 @@ async function fetchAndAddAllRepositories(installationId: number, installationDb
     if (!process.env.NEXT_PUBLIC_GITHUB_APP_ID) {
       throw new Error("NEXT_PUBLIC_GITHUB_APP_ID environment variable is not set");
     }
-    if (!process.env.NEXT_PUBLIC_GITHUB_PRIVATE_KEY) {
-      throw new Error("NEXT_PUBLIC_GITHUB_PRIVATE_KEY environment variable is not set");
+    if (!process.env.GITHUB_PRIVATE_KEY) {
+      throw new Error("GITHUB_PRIVATE_KEY environment variable is not set");
     }
     
     // Use App auth to get installation access token
@@ -314,7 +553,7 @@ async function fetchAndAddAllRepositories(installationId: number, installationDb
     
     const app = new App({
       appId: process.env.NEXT_PUBLIC_GITHUB_APP_ID,
-      privateKey: process.env.NEXT_PUBLIC_GITHUB_PRIVATE_KEY,
+      privateKey: process.env.GITHUB_PRIVATE_KEY,
     });
 
     console.log(`🔐 Getting installation octokit for installation ${installationId}...`);

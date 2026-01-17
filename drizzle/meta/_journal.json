@@ -8,6 +8,20 @@
       "when": 1767783644704,
       "tag": "0000_heavy_night_thrasher",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1768569101353,
+      "tag": "0001_watery_white_queen",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768645867032,
+      "tag": "0002_square_christian_walker",
+      "breakpoints": true
     }
   ]
 }

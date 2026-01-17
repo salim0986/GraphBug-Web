@@ -7,7 +7,7 @@ export async function getInstallationOctokit(installationId: string) {
     authStrategy: createAppAuth,
     auth: {
       appId: process.env.NEXT_PUBLIC_GITHUB_APP_ID,
-      privateKey: process.env.NEXT_PUBLIC_GITHUB_PRIVATE_KEY,
+      privateKey: process.env.GITHUB_PRIVATE_KEY,
       installationId: installationId,
     },
   });

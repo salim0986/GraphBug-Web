@@ -13,8 +13,8 @@ export const serverEnv = {
   AUTH_GITHUB_SECRET: process.env.AUTH_GITHUB_SECRET,
   AUTH_RESEND_KEY: process.env.AUTH_RESEND_KEY,
   NEXT_PUBLIC_GITHUB_APP_ID: process.env.NEXT_PUBLIC_GITHUB_APP_ID,
-  NEXT_PUBLIC_GITHUB_PRIVATE_KEY: process.env.NEXT_PUBLIC_GITHUB_PRIVATE_KEY,
-  NEXT_PUBLIC_GITHUB_WEBHOOK_SECRET: process.env.NEXT_PUBLIC_GITHUB_WEBHOOK_SECRET,
+  GITHUB_PRIVATE_KEY: process.env.GITHUB_PRIVATE_KEY,
+  GITHUB_WEBHOOK_SECRET: process.env.GITHUB_WEBHOOK_SECRET,
   GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
   AI_SERVICE_URL: process.env.AI_SERVICE_URL || 'http://localhost:8000',
 } as const;
@@ -31,7 +31,7 @@ if (typeof window === 'undefined') {
     'DATABASE_URL',
     'AUTH_SECRET',
     'NEXT_PUBLIC_GITHUB_APP_ID',
-    'NEXT_PUBLIC_GITHUB_WEBHOOK_SECRET',
+    'GITHUB_WEBHOOK_SECRET',
   ] as const;
 
   for (const key of required) {
