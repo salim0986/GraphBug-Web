@@ -79,7 +79,8 @@ export const users = pgTable("user", {
   email: text("email").unique(),
   emailVerified: timestamp("emailVerified", { mode: "date" }),
   image: text("image"),
-  
+  // User's own Gemini API key for BYO (Bring Your Own) system
+  geminiApiKey: text("gemini_api_key"),
 })
  
 // Links users to their OAuth providers

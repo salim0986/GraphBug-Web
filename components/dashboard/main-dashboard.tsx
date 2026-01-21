@@ -1,8 +1,25 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { 
+  BarChart3, 
+  GitBranch, 
+  TrendingUp, 
+  AlertCircle, 
+  CheckCircle2, 
+  Clock, 
+  RefreshCw,
+  Github,
+  Sparkles,
+  Network,
+  Activity,
+  Zap,
+  Key,
+  ExternalLink
+} from "lucide-react";
 import InstallGitHub from "./install-github";
 import RepositoryList from "./repository-list";
+import Link from "next/link";
 
 interface Stats {
   totalRepos: number;
@@ -39,9 +56,11 @@ export default function MainDashboard() {
   });
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [installations, setInstallations] = useState<Installation[]>([]);
+  const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
 
   useEffect(() => {
     fetchData();
+    checkApiKey();
   }, []);
 
   async function fetchData() {
@@ -59,6 +78,18 @@ export default function MainDashboard() {
     }
   }
 
+  async function checkApiKey() {
+    try {
+      const response = await fetch("/api/user/gemini-key");
+      if (response.ok) {
+        const data = await response.json();
+        setHasApiKey(data.hasKey);
+      }
+    } catch (error) {
+      console.error("Failed to check API key:", error);
+    }
+  }
+
   // If no installations, show the install screen
   if (!loading && installations.length === 0) {
     return <InstallGitHub />;
@@ -68,126 +99,182 @@ export default function MainDashboard() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="text-[var(--text)]/60">Loading dashboard...</p>
+          <div className="relative">
+            <div className="w-12 h-12 border-4 border-[var(--primary)]/20 rounded-full mx-auto"></div>
+            <div className="absolute inset-0 w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto"></div>
+          </div>
+          <div className="space-y-2">
+            <p className="text-base font-semibold text-[var(--text)]">Loading your dashboard...</p>
+          </div>
         </div>
       </div>
     );
   }
 
+  const statsCards = [
+    {
+      title: "Total Repos",
+      value: stats.totalRepos,
+      icon: GitBranch,
+      color: "text-blue-500",
+      change: "+12%",
+      changePositive: true,
+    },
+    {
+      title: "Active & Ready",
+      value: stats.activeRepos,
+      icon: CheckCircle2,
+      color: "text-[var(--primary)]",
+      change: "Operational",
+      changePositive: true,
+    },
+    {
+      title: "Processing",
+      value: stats.processing,
+      icon: Clock,
+      color: "text-[var(--secondary)]",
+      change: "Ingesting",
+      changePositive: true,
+    },
+    {
+      title: "Failed",
+      value: stats.failed,
+      icon: AlertCircle,
+      color: "text-red-500",
+      change: stats.failed > 0 ? "Check logs" : "No issues",
+      changePositive: stats.failed === 0,
+    },
+  ];
+
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <p className="text-[var(--text)]/60 mt-1">
-            Welcome back! Here's an overview of your repositories.
-          </p>
+      {/* API Key Warning Banner */}
+      {hasApiKey === false && (
+        <div className="p-5 bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-lg">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 p-2.5 bg-amber-100 border border-amber-300 rounded-lg">
+              <Key className="w-6 h-6 text-amber-700" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base font-bold text-amber-900 mb-1">
+                Gemini API Key Required
+              </h3>
+              <p className="text-sm text-amber-800 mb-3">
+                To enable AI-powered code reviews, you need to add your own Gemini API key. 
+                Graph Bug uses a Bring Your Own (BYO) system to ensure you have full control over your API usage and costs.
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <Link 
+                  href="/settings?tab=api"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors"
+                >
+                  <Key className="w-4 h-4" />
+                  Add API Key in Settings
+                </Link>
+                <a
+                  href="https://aistudio.google.com/app/apikey"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-amber-50 text-amber-900 text-sm font-semibold border border-amber-300 rounded-lg transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Get Gemini API Key
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
-        <button
-          onClick={fetchData}
-          className="px-4 py-2 text-sm bg-white hover:bg-gray-50 border border-[var(--text)]/20 rounded-lg transition-colors flex items-center gap-2"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Refresh
-        </button>
-      </div>
+      )}
 
-      {/* KPI Cards */}
+      {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <KPICard
-          title="Total Repositories"
-          value={stats.totalRepos}
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-            </svg>
-          }
-          color="blue"
-        />
-        
-        <KPICard
-          title="Active & Ready"
-          value={stats.activeRepos}
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-          color="green"
-        />
-        
-        <KPICard
-          title="Processing"
-          value={stats.processing}
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          }
-          color="yellow"
-        />
-        
-        <KPICard
-          title="Failed"
-          value={stats.failed}
-          icon={
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          }
-          color="red"
-        />
-      </div>
-
-      {/* Installations Summary */}
-      <div className="bg-white rounded-xl p-6 border border-[var(--text)]/10">
-        <h2 className="text-xl font-semibold mb-4">Connected GitHub Accounts</h2>
-        <div className="space-y-3">
-          {installations.map((installation) => (
-            <div key={installation.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] rounded-full flex items-center justify-center text-white font-bold">
-                  {installation.accountLogin.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <div className="font-medium">{installation.accountLogin}</div>
-                  <div className="text-sm text-[var(--text)]/60">
-                    {installation.accountType} • {installation.repositorySelection === "all" ? "All repositories" : "Selected repositories"}
+        {statsCards.map((card, index) => {
+          const Icon = card.icon;
+          return (
+            <div
+              key={card.title}
+              className="group relative p-6 bg-white border border-[var(--text)]/5 hover:border-[var(--text)]/10 transition-all duration-300 overflow-hidden"
+            >
+              {/* Subtle gradient background */}
+              <div className="absolute inset-0 bg-gradient-to-br from-[var(--background)]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              
+              <div className="relative">
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`p-2.5 bg-gradient-to-br from-[var(--background)] to-white border border-[var(--text)]/5 ${card.color}`}>
+                    <Icon className="w-5 h-5" strokeWidth={1.5} />
                   </div>
+                  <span className={`text-xs font-semibold tracking-wide px-2.5 py-1 ${
+                    card.changePositive 
+                      ? 'bg-[var(--primary)]/5 text-[var(--primary)] border border-[var(--primary)]/10' 
+                      : 'bg-red-50 text-red-600 border border-red-100'
+                  }`}>
+                    {card.change}
+                  </span>
+                </div>
+                
+                <div>
+                  <h3 className="text-3xl font-bold text-[var(--text)] mb-1 tracking-tight">
+                    {card.value}
+                  </h3>
+                  <p className="text-sm font-medium text-[var(--text)]/50 uppercase tracking-wide">
+                    {card.title}
+                  </p>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
 
-      {/* Repository List */}
-      <RepositoryList repositories={repositories} onRefresh={fetchData} />
-    </div>
-  );
-}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Main Repository List - Takes up 2/3 */}
+        <div className="lg:col-span-2">
+           <RepositoryList repositories={repositories} onRefresh={fetchData} />
+        </div>
 
-function KPICard({ title, value, icon, color }: { title: string; value: number; icon: React.ReactNode; color: string }) {
-  const colorClasses = {
-    blue: "from-blue-500 to-blue-600",
-    green: "from-green-500 to-green-600",
-    yellow: "from-yellow-500 to-yellow-600",
-    red: "from-red-500 to-red-600",
-  }[color];
+        {/* Sidebar - Installed Accounts */}
+        <div className="space-y-6">
+            <div className="bg-white border border-[var(--text)]/5 p-6">
+                <h3 className="font-semibold text-[var(--text)] mb-5 flex items-center gap-2.5 text-sm uppercase tracking-wide">
+                    <Github className="w-4 h-4" strokeWidth={2} />
+                    Connected Accounts
+                </h3>
+                 <div className="space-y-3">
+                  {installations.map((installation) => (
+                    <div
+                      key={installation.id}
+                      className="flex items-center justify-between p-4 bg-[var(--background)]/50 border border-[var(--text)]/5 hover:border-[var(--text)]/10 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-9 h-9 bg-[var(--text)] flex items-center justify-center text-white">
+                           <Github className="w-4 h-4" strokeWidth={2} />
+                        </div>
+                        <div className="overflow-hidden">
+                          <p className="font-semibold text-sm text-[var(--text)] truncate">{installation.accountLogin}</p>
+                          <p className="text-xs text-[var(--text)]/50 font-medium">
+                            {installation.repositorySelection === 'all' ? 'All repos' : 'Selected repos'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="w-2 h-2 bg-[var(--primary)]" />
+                    </div>
+                  ))}
+                </div>
+            </div>
 
-  return (
-    <div className="bg-white rounded-xl p-6 border border-[var(--text)]/10 hover:shadow-lg transition-shadow">
-      <div className="flex items-center justify-between mb-4">
-        <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${colorClasses} flex items-center justify-center text-white`}>
-          {icon}
+            <div className="bg-gradient-to-br from-[var(--primary)]/5 to-[var(--primary)]/10 border border-[var(--primary)]/20 p-6">
+                <h3 className="font-bold text-[var(--text)] mb-3 text-sm flex items-center gap-2">
+                    <div className="w-5 h-5 bg-[var(--primary)] flex items-center justify-center">
+                        <Sparkles className="w-3 h-3 text-[var(--text)]" strokeWidth={2.5} />
+                    </div>
+                    Pro Tip
+                </h3>
+                <p className="text-sm text-[var(--text)]/70 leading-relaxed">
+                    Graph Bug works best when you process your default branch first. This builds the complete knowledge graph before reviewing individual PRs.
+                </p>
+            </div>
         </div>
       </div>
-      <div className="text-3xl font-bold mb-1">{value}</div>
-      <div className="text-sm text-[var(--text)]/60">{title}</div>
     </div>
   );
 }

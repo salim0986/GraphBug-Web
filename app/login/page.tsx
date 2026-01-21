@@ -6,7 +6,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Branding */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] p-12 flex-col justify-between">
+      <div className="hidden lg:flex lg:w-1/2 bg-[var(--primary)] p-12 flex-col justify-between">
         <Link href="/" className="flex items-center gap-2 text-white">
           <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl"></div>
           <span className="text-2xl font-bold">Graph Bug</span>
@@ -48,7 +48,7 @@ export default function LoginPage() {
           {/* Back to Home - Mobile */}
           <div className="lg:hidden mb-8">
             <Link href="/" className="flex items-center gap-2 text-[var(--text)]">
-              <div className="w-8 h-8 bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] rounded-lg"></div>
+              <div className="w-8 h-8 bg-[var(--primary)] rounded-lg"></div>
               <span className="text-xl font-bold">Graph Bug</span>
             </Link>
           </div>

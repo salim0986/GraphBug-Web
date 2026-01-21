@@ -2,16 +2,19 @@
 
 :root {
   --text: #3f3d43;
-  --background: #f0f0ff;
+  --background: #f0ffff;
   --primary: #54de87;
   --secondary: #bf66ff;
   --accent: #54de87;
+  --success: #54de87;
+  --warning: #f59e0b;
+  --error: #ef4444;
 }
 
-@theme inline {
-  --text: var(--text);
-  --background: var(--background);
-  --primary: var(--primary);
-  --secondary: var(--secondary);
-  --accent: var(--accent);
+body {
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading), ui-sans-serif, system-ui, sans-serif;
 }

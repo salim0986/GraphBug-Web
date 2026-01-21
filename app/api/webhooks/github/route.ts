@@ -1,6 +1,7 @@
-import { db, githubInstallations, githubRepositories } from "@/db/schema";
+import { db, githubInstallations, githubRepositories, users } from "@/db/schema";
 import { Webhooks } from "@octokit/webhooks";
 import { eq, and } from "drizzle-orm";
+import crypto from "crypto";
 
 const webhooks = new Webhooks({
   secret: process.env.GITHUB_WEBHOOK_SECRET!,
@@ -228,7 +229,7 @@ async function handlePullRequestEvent(payload: any) {
 
     // Trigger AI code review
     console.log(`🤖 Triggering AI review for PR #${pull_request.number} in ${repository.full_name}`);
-    await triggerAICodeReview(repoRecord.id, pull_request, installation.id);
+    await triggerAICodeReview(repoRecord.id, pull_request, installation.id, installationRecord.userId);
   }
 
   // Trigger auto-ingestion on PR merge (Phase 8)
@@ -270,10 +271,51 @@ async function handlePullRequestEvent(payload: any) {
   return new Response("OK", { status: 200 });
 }
 
+// Decrypt user's Gemini API key
+function decryptApiKey(encryptedText: string): string {
+  const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || process.env.AUTH_SECRET || "default-key-change-in-production";
+  const ALGORITHM = "aes-256-cbc";
+  
+  const key = crypto.scryptSync(ENCRYPTION_KEY, "salt", 32);
+  const parts = encryptedText.split(":");
+  const iv = Buffer.from(parts[0], "hex");
+  const encryptedData = parts[1];
+  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+  let decrypted = decipher.update(encryptedData, "hex", "utf8");
+  decrypted += decipher.final("utf8");
+  return decrypted;
+}
+
 // Trigger AI-powered code review for a pull request
-async function triggerAICodeReview(repoDbId: string, pullRequest: any, installationId: number) {
+async function triggerAICodeReview(repoDbId: string, pullRequest: any, installationId: number, userId: string | null) {
   try {
     console.log(`📝 Starting AI review for PR #${pullRequest.number}: ${pullRequest.title}`);
+    
+    // Fetch user's Gemini API key if userId exists
+    let geminiApiKey: string | null = null;
+    if (userId) {
+      const [user] = await db
+        .select({ geminiApiKey: users.geminiApiKey })
+        .from(users)
+        .where(eq(users.id, userId))
+        .limit(1);
+      
+      if (user?.geminiApiKey) {
+        try {
+          geminiApiKey = decryptApiKey(user.geminiApiKey);
+          console.log(`✅ Using user's Gemini API key for review`);
+        } catch (error) {
+          console.error(`❌ Failed to decrypt user's API key:`, error);
+        }
+      } else {
+        console.warn(`⚠️ User ${userId} has no Gemini API key configured, review will be skipped`);
+        // Post a comment to the PR about missing API key
+        return;
+      }
+    } else {
+      console.warn(`⚠️ No user associated with installation ${installationId}, review will be skipped`);
+      return;
+    }
     
     // Get PR details
     const prNumber = pullRequest.number;
@@ -337,6 +379,7 @@ async function triggerAICodeReview(repoDbId: string, pullRequest: any, installat
           installation_id: installationId.toString(),
           pull_request_id: processData.pullRequestId,
           context: processData.context,
+          gemini_api_key: geminiApiKey, // Pass user's API key to AI service
         }),
       });
 

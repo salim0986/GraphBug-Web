@@ -1,6 +1,6 @@
 import { auth } from '@/auth'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
+import { Sidebar } from '@/components/dashboard/sidebar'
 
 export default async function ProtectedLayout({ 
   children 
@@ -14,53 +14,35 @@ export default async function ProtectedLayout({
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Navigation */}
-      <nav className="bg-white border-b border-[var(--text)]/10 sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <Link href="/dashboard" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] rounded-lg"></div>
-              <span className="text-xl font-bold">Graph Bug</span>
-            </Link>
-
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-3 px-4 py-2 bg-[var(--background)] rounded-lg">
-                {session.user.image && (
-                  <img 
-                    src={session.user.image} 
-                    alt={session.user.name || 'User'} 
-                    className="w-8 h-8 rounded-full"
-                  />
-                )}
-                <div className="text-sm">
-                  <div className="font-medium">{session.user.name}</div>
-                  <div className="text-[var(--text)]/60 text-xs">{session.user.email}</div>
+    <div className="min-h-screen flex bg-[var(--background)]">
+      <Sidebar />
+      <main className="flex-1 overflow-auto bg-[var(--background)]">
+        <div className="container mx-auto px-8 py-8">
+            {/* Header Area */}
+            <header className="flex items-center justify-between mb-6">
+                <div>
+                    <h1 className="text-xl font-bold font-heading text-[var(--text)]">
+                        Welcome back, {session.user.name?.split(' ')[0]}
+                    </h1>
+                    <p className="text-[var(--text)]/60 text-sm">
+                        Here's what's happening with your repositories today.
+                    </p>
                 </div>
-              </div>
-              
-              <Link
-                href="/api/auth/signout"
-                className="px-4 py-2 text-sm text-[var(--text)]/70 hover:text-[var(--text)] hover:bg-black/5 rounded-lg transition-colors"
-              >
-                Sign Out
-              </Link>
-            </div>
-          </div>
+                
+                <div className="flex items-center gap-3">
+                   {session.user.image && (
+                      <img 
+                        src={session.user.image} 
+                        alt={session.user.name || 'User'} 
+                        className="w-10 h-10 rounded-full border-2 border-white shadow-sm"
+                      />
+                    )}
+                </div>
+            </header>
+            
+            {children}
         </div>
-      </nav>
-
-      {/* Main Content */}
-      <main className="flex-1 container mx-auto px-6 py-8">
-        {children}
       </main>
-
-      {/* Footer */}
-      <footer className="border-t border-[var(--text)]/10 py-6">
-        <div className="container mx-auto px-6 text-center text-sm text-[var(--text)]/60">
-          © 2026 Graph Bug. All rights reserved.
-        </div>
-      </footer>
     </div>
   )
 }

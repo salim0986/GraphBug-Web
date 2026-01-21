@@ -91,13 +91,13 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
 
   if (repositories.length === 0) {
     return (
-      <div className="bg-white rounded-xl p-12 border border-[var(--text)]/10 text-center">
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+      <div className="bg-white border border-[var(--text)]/5 p-16 text-center">
+        <div className="w-16 h-16 bg-[var(--background)] border border-[var(--text)]/10 flex items-center justify-center mx-auto mb-6">
+          <svg className="w-8 h-8 text-[var(--text)]/30" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
           </svg>
         </div>
-        <h3 className="text-lg font-semibold mb-2">No Repositories Yet</h3>
+        <h3 className="text-lg font-bold text-[var(--text)] mb-2 tracking-tight">No Repositories Yet</h3>
         <p className="text-[var(--text)]/60 mb-4">
           You haven't selected any repositories for review. Add repositories to your GitHub App installation to get started.
         </p>
@@ -117,12 +117,12 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
   }
 
   return (
-    <div className="bg-white rounded-xl border border-[var(--text)]/10 overflow-hidden">
-      <div className="p-6 border-b border-[var(--text)]/10">
+    <div className="bg-white border border-[var(--text)]/5 overflow-hidden">
+      <div className="p-6 border-b border-[var(--text)]/5">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-semibold">Repositories</h2>
-            <p className="text-sm text-[var(--text)]/60 mt-1">
+            <h2 className="text-xl font-bold tracking-tight text-[var(--text)]">Repositories</h2>
+            <p className="text-sm text-[var(--text)]/50 mt-1.5 font-medium">
               Select repositories to review with AI
             </p>
           </div>
@@ -131,7 +131,7 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
             <div className="flex items-center gap-3">
               <button
                 onClick={toggleAll}
-                className="px-4 py-2 text-sm border border-[var(--text)]/20 hover:bg-gray-100 rounded-lg transition-colors"
+                className="px-4 py-2 text-sm font-medium border border-[var(--text)]/10 hover:border-[var(--text)]/20 hover:bg-[var(--background)]/50 transition-all"
               >
                 {selectedRepos.size === selectableRepos.length ? "Deselect All" : "Select All"}
               </button>
@@ -139,11 +139,11 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
               <button
                 onClick={handleReviewSelected}
                 disabled={selectedRepos.size === 0 || isReviewing}
-                className="px-6 py-2 text-sm bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] hover:opacity-90 text-white rounded-lg transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                className="px-6 py-2.5 text-sm bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-[var(--text)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
               >
                 {isReviewing ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white animate-spin"></div>
                     Starting Review...
                   </>
                 ) : (
@@ -160,13 +160,13 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
         </div>
       </div>
 
-      <div className="divide-y divide-[var(--text)]/10">
+      <div className="divide-y divide-[var(--text)]/5">
         {repositories.map((repo) => {
           const isSelectable = repo.ingestionStatus === "not_reviewed" || repo.ingestionStatus === "failed";
           const isSelected = selectedRepos.has(repo.id);
           
           return (
-            <div key={repo.id} className={`p-6 transition-colors ${isSelectable ? 'hover:bg-gray-50' : 'bg-gray-50/50'}`}>
+            <div key={repo.id} className={`p-6 transition-all duration-200 ${isSelectable ? 'hover:bg-[var(--background)]/30' : 'bg-[var(--background)]/10'}`}>
               <div className="flex items-start gap-4">
                 {isSelectable && (
                   <div className="pt-1">
@@ -211,7 +211,7 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
                     href={`https://github.com/${repo.fullName}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-4 py-2 text-sm border border-[var(--text)]/20 hover:bg-gray-100 rounded-lg transition-colors"
+                    className="px-4 py-2 text-sm font-medium border border-[var(--text)]/10 hover:border-[var(--text)]/20 hover:bg-[var(--background)]/50 transition-all"
                   >
                     View on GitHub
                   </a>
@@ -227,16 +227,16 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
 
 function StatusBadge({ status }: { status: string }) {
   const config = {
-    not_reviewed: { color: "bg-gray-100 text-gray-700", label: "Not Ingested", icon: "⏸️" },
-    pending: { color: "bg-yellow-100 text-yellow-700", label: "Pending", icon: "⏳" },
-    processing: { color: "bg-blue-100 text-blue-700", label: "Processing", icon: "⚙️" },
-    completed: { color: "bg-green-100 text-green-700", label: "Ready", icon: "✅" },
-    failed: { color: "bg-red-100 text-red-700", label: "Failed", icon: "❌" },
-  }[status] || { color: "bg-gray-100 text-gray-700", label: status, icon: "❓" };
+    not_reviewed: { color: "bg-gray-50 text-gray-700 border-gray-200", label: "Not Ingested" },
+    pending: { color: "bg-yellow-50 text-yellow-700 border-yellow-200", label: "Pending" },
+    processing: { color: "bg-blue-50 text-blue-700 border-blue-200", label: "Processing" },
+    completed: { color: "bg-emerald-50 text-emerald-700 border-emerald-200", label: "Ready" },
+    failed: { color: "bg-red-50 text-red-700 border-red-200", label: "Failed" },
+  }[status] || { color: "bg-gray-50 text-gray-700 border-gray-200", label: status };
 
   return (
-    <span className={`px-3 py-1 text-xs font-medium rounded-full ${config.color}`}>
-      {config.icon} {config.label}
+    <span className={`px-3 py-1.5 text-xs font-semibold tracking-wide uppercase border ${config.color}`}>
+      {config.label}
     </span>
   );
 }
