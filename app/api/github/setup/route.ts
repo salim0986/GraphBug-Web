@@ -1,5 +1,5 @@
 import { auth } from "@/auth";
-import { db, githubInstallations } from "@/db/schema";
+import { db, githubInstallations, githubRepositories } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextResponse } from "next/server";
 
@@ -23,33 +23,49 @@ export async function GET(req: Request) {
     return NextResponse.redirect(new URL("/dashboard?error=no_installation", req.url));
   }
 
-  console.log(`User ${session.user.email} completed setup for installation ${installationId}`);
+  console.log(`\n🔗 [SETUP CALLBACK] User ${session.user.email} completing setup`);
+  console.log(`   Installation ID: ${installationId}`);
+  console.log(`   Action: ${setupAction}`);
 
-  // Link the installation to the user
-  // The webhook may have already created the installation with real data
   try {
     // Check if installation already exists (from webhook)
-    const [existing] = await db
+    const existing = await db
       .select()
       .from(githubInstallations)
       .where(eq(githubInstallations.installationId, parseInt(installationId)));
 
-    if (existing) {
+    console.log(`   Checking for existing installation... Found: ${existing.length}`);
+
+    if (existing.length > 0) {
       // Installation exists (webhook fired first), just update userId
-      await db
+      const [updated] = await db
         .update(githubInstallations)
         .set({ 
           userId: session.user.id, 
           updatedAt: new Date() 
         })
-        .where(eq(githubInstallations.installationId, parseInt(installationId)));
+        .where(eq(githubInstallations.installationId, parseInt(installationId)))
+        .returning();
       
-      console.log(`✅ Linked existing installation ${installationId} to user ${session.user.email}`);
+      console.log(`   ✅ Linked existing installation to user ${session.user.email}`);
+      console.log(`      Installation record ID: ${updated.id}`);
+      
+      // Verify repos are there
+      const repos = await db
+        .select()
+        .from(githubRepositories)
+        .where(eq(githubRepositories.installationId, updated.id));
+      console.log(`      Repositories available: ${repos.length}`);
+      if (repos.length === 0) {
+        console.warn(`      ⚠️ WARNING: No repositories found yet!`);
+        console.warn(`      This is normal if webhook hasn't processed yet (wait 5-10 seconds)`);
+      }
     } else {
       // Installation doesn't exist yet (webhook hasn't fired), create minimal record
-      console.log(`Creating minimal installation record for ID ${installationId}, webhook will populate details`);
+      console.log(`   ⏳ Installation not found - creating placeholder`);
+      console.log(`      (Webhook will populate details when it fires)`);
       
-      await db.insert(githubInstallations).values({
+      const [newInstall] = await db.insert(githubInstallations).values({
         userId: session.user.id,
         installationId: parseInt(installationId),
         accountLogin: "pending", // Will be updated by webhook
@@ -57,14 +73,18 @@ export async function GET(req: Request) {
         targetType: "pending",
         installedAt: new Date(),
         updatedAt: new Date(),
-      });
+      })
+      .returning();
       
-      console.log(`✅ Created installation ${installationId} with userId ${session.user.id}, awaiting webhook data`);
+      console.log(`   ✅ Created placeholder installation`);
+      console.log(`      Installation record ID: ${newInstall.id}`);
+      console.log(`      Waiting for webhook to populate repository list...`);
     }
   } catch (error) {
-    console.error("Error creating/updating installation:", error);
+    console.error("❌ Error creating/updating installation:", error);
   }
 
+  console.log(`🔄 Redirecting user to dashboard...\n`);
   // Redirect back to dashboard with success message
   return NextResponse.redirect(new URL("/dashboard?setup=success", req.url));
 }

@@ -20,7 +20,7 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
 
   // Filter repos that are not yet reviewed or failed
   const selectableRepos = repositories.filter(
-    r => r.ingestionStatus === "not_reviewed" || r.ingestionStatus === "failed"
+    r => r.ingestionStatus === "pending" || r.ingestionStatus === "failed" || r.ingestionStatus === "not_reviewed"
   );
 
   function toggleRepo(repoId: string) {

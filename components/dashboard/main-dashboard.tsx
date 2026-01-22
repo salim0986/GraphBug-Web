@@ -41,6 +41,7 @@ interface Repository {
 
 interface Installation {
   id: string;
+  installationId: number;
   accountLogin: string;
   accountType: string;
   repositorySelection: string;
@@ -48,6 +49,7 @@ interface Installation {
 
 export default function MainDashboard() {
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [stats, setStats] = useState<Stats>({
     totalRepos: 0,
     activeRepos: 0,
@@ -57,10 +59,18 @@ export default function MainDashboard() {
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [installations, setInstallations] = useState<Installation[]>([]);
   const [hasApiKey, setHasApiKey] = useState<boolean | null>(null);
+  const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
   useEffect(() => {
     fetchData();
     checkApiKey();
+    
+    // Auto-refresh every 10 seconds to catch webhooks
+    const interval = setInterval(() => {
+      fetchData();
+    }, 10000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   async function fetchData() {
@@ -68,14 +78,26 @@ export default function MainDashboard() {
       const response = await fetch("/api/repositories");
       const data = await response.json();
       
+      console.log("[Dashboard] Fetched repositories:", {
+        installations: data.installations?.length,
+        repositories: data.repositories?.length,
+      });
+      
       setStats(data.stats || {});
       setRepositories(data.repositories || []);
       setInstallations(data.installations || []);
+      setLastRefresh(new Date());
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
+  }
+  
+  async function manualRefresh() {
+    setRefreshing(true);
+    await fetchData();
   }
 
   async function checkApiKey() {
@@ -105,6 +127,7 @@ export default function MainDashboard() {
           </div>
           <div className="space-y-2">
             <p className="text-base font-semibold text-[var(--text)]">Loading your dashboard...</p>
+            <p className="text-xs text-[var(--text)]/50">If you just installed the app, this may take a few seconds</p>
           </div>
         </div>
       </div>
@@ -186,6 +209,48 @@ export default function MainDashboard() {
         </div>
       )}
 
+      {/* No Repositories Warning Banner */}
+      {installations.length > 0 && repositories.length === 0 && (
+        <div className="p-5 bg-gradient-to-r from-orange-50 to-red-50 border-2 border-orange-300 rounded-lg">
+          <div className="flex items-start gap-4">
+            <div className="shrink-0 p-2.5 bg-orange-100 border border-orange-300 rounded-lg">
+              <AlertCircle className="w-6 h-6 text-orange-700" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-base font-bold text-orange-900 mb-1 flex items-center gap-2">
+                No Repositories Found
+                {refreshing && <RefreshCw className="w-4 h-4 animate-spin" />}
+              </h3>
+              <p className="text-sm text-orange-800 mb-3">
+                You have connected your GitHub account, but no repositories are showing up. This might happen if the GitHub webhook hasn't processed yet (this takes 5-10 seconds).
+              </p>
+              <div className="flex flex-wrap gap-3">
+                <button
+                  onClick={manualRefresh}
+                  disabled={refreshing}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 hover:bg-orange-700 disabled:bg-orange-400 text-white text-sm font-semibold rounded-lg transition-colors"
+                >
+                  <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+                  {refreshing ? 'Refreshing...' : 'Refresh Now'}
+                </button>
+                <a
+                  href={`https://github.com/settings/installations/${installations[0]?.installationId || ''}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-orange-50 text-orange-900 text-sm font-semibold border border-orange-300 rounded-lg transition-colors"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  Check GitHub App Settings
+                </a>
+              </div>
+              <p className="text-xs text-orange-700 mt-3 italic">
+                💡 If refreshing doesn't help, try selecting/adding repositories again in GitHub App settings
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Overview Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statsCards.map((card, index) => {
@@ -229,7 +294,7 @@ export default function MainDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main Repository List - Takes up 2/3 */}
         <div className="lg:col-span-2">
-           <RepositoryList repositories={repositories} onRefresh={fetchData} />
+           <RepositoryList repositories={repositories} onRefresh={manualRefresh} />
         </div>
 
         {/* Sidebar - Installed Accounts */}

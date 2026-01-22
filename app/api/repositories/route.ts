@@ -17,7 +17,10 @@ export async function GET() {
       .from(githubInstallations)
       .where(eq(githubInstallations.userId, session.user.id));
 
+    console.log(`📊 [/api/repositories] Found ${installations.length} installations for user ${session.user.id}`);
+
     if (installations.length === 0) {
+      console.log(`   ℹ️ No installations found - user needs to install GitHub App`);
       return NextResponse.json({
         installations: [],
         repositories: [],
@@ -40,6 +43,13 @@ export async function GET() {
         .from(githubRepositories)
         .where(eq(githubRepositories.installationId, installationId));
       
+      console.log(`   Installation ${installationId}: Found ${repos.length} repositories`);
+      if (repos.length === 0) {
+        console.warn(`      ⚠️ Installation has NO repositories! Possible causes:`);
+        console.warn(`         - Webhook hasn't fired yet (retry in 5s)`);
+        console.warn(`         - Webhook fired but repositories weren't included in payload`);
+        console.warn(`         - "All repositories" selected but GitHub API fetch failed`);
+      }
       allRepositories.push(...repos);
     }
 

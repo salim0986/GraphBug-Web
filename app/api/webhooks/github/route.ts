@@ -53,7 +53,11 @@ async function handleInstallationEvent(payload: any) {
   const installationId = installation.id;
 
   if (action === "created") {
-    console.log(`✅ App installed by ${installation.account.login}, ID: ${installationId}`);
+    console.log(`\n✅ [WEBHOOK] App installed`);
+    console.log(`   Account: ${installation.account.login} (${installation.account.type})`);
+    console.log(`   Installation ID: ${installationId}`);
+    console.log(`   Repository Selection: ${installation.repository_selection}`);
+    console.log(`   Repositories in payload: ${payload.repositories?.length || 0}`);
 
     const installationData = {
       accountLogin: installation.account.login,
@@ -67,26 +71,27 @@ async function handleInstallationEvent(payload: any) {
     };
 
     // Check if installation already exists (from setup callback)
-    const [existing] = await db
+    const existing = await db
       .select()
       .from(githubInstallations)
       .where(eq(githubInstallations.installationId, installationId));
 
     let createdInstallation;
 
-    if (existing) {
+    if (existing.length > 0) {
       // Update existing record, preserve userId if it exists
       [createdInstallation] = await db
         .update(githubInstallations)
         .set({
           ...installationData,
-          userId: existing.userId, // Preserve userId from setup callback
+          userId: existing[0].userId, // Preserve userId from setup callback
           updatedAt: new Date(),
         })
         .where(eq(githubInstallations.installationId, installationId))
         .returning();
       
-      console.log(`✅ Updated existing installation ${installationId} with real data (userId preserved: ${existing.userId || 'none'})`);
+      console.log(`   ℹ️ Installation already existed (setup callback ran first)`);
+      console.log(`      Updated with webhook data, userId preserved: ${existing[0].userId || '(none yet)'}`);
     } else {
       // Create new record (userId will be set by setup callback later or remain null)
       [createdInstallation] = await db
@@ -98,16 +103,21 @@ async function handleInstallationEvent(payload: any) {
         })
         .returning();
       
-      console.log(`✅ Created new installation ${installationId} (userId will be set by setup callback)`);
+      console.log(`   ✅ Created new installation record (userId will be set by setup callback)`);
+      console.log(`      Record ID: ${createdInstallation.id}`);
     }
 
     // Add repositories to database (without triggering ingestion)
     if (installation.repository_selection === "selected" && payload.repositories) {
       // Specific repos were selected
+      console.log(`   📚 Adding ${payload.repositories.length} selected repositories...`);
       await addRepositories(createdInstallation.id, payload.repositories);
     } else if (installation.repository_selection === "all") {
       // All repositories - need to fetch them from GitHub API
+      console.log(`   📚 Fetching all repositories from GitHub API...`);
       await fetchAndAddAllRepositories(installationId, createdInstallation.id);
+    } else {
+      console.log(`   ⚠️ Unknown repository selection: ${installation.repository_selection}`);
     }
 
   } else if (action === "deleted") {
@@ -485,6 +495,9 @@ async function triggerAutoIngestion(repoRecord: any, repository: any, installati
 
 // Helper: Add repositories and trigger ingestion
 async function addRepositories(installationDbId: string, repos: any[]) {
+  console.log(`\n📦 [addRepositories] Processing ${repos.length} repositories`);
+  
+  let added = 0;
   for (const repo of repos) {
     try {
       // Check if repo already exists (avoid duplicates)
@@ -499,7 +512,7 @@ async function addRepositories(installationDbId: string, repos: any[]) {
         );
 
       if (existing.length > 0) {
-        console.log(`ℹ️ Repository ${repo.full_name} already exists, skipping`);
+        console.log(`   ℹ️ ${repo.full_name} - already exists, skipping`);
         continue;
       }
 
@@ -513,16 +526,19 @@ async function addRepositories(installationDbId: string, repos: any[]) {
           fullName: repo.full_name,
           private: repo.private,
           addedAt: new Date(),
-          ingestionStatus: "not_reviewed",
+          ingestionStatus: "pending",
         })
         .returning();
 
-      console.log(`✅ Repository ${repo.full_name} added to database (status: not_reviewed)`);
+      console.log(`   ✅ ${repo.full_name} - added to database`);
+      added++;
 
     } catch (error) {
-      console.error(`❌ Failed to add repository ${repo.full_name}:`, error);
+      console.error(`   ❌ ${repo.full_name} - failed to add:`, error);
     }
   }
+  
+  console.log(`✅ Added ${added}/${repos.length} repositories successfully\n`);
 }
 
 // Helper: Remove repositories
