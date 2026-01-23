@@ -58,6 +58,9 @@ export async function checkAIServiceHealth(): Promise<HealthStatus> {
  */
 export async function ingestRepository(data: IngestRequest): Promise<{ status: string; repo_id: string }> {
   try {
+    console.log(`[AI Service] Sending ingest request to ${AI_SERVICE_URL}/ingest`);
+    console.log(`[AI Service] Request data:`, JSON.stringify(data, null, 2));
+
     // Add timeout of 2 minutes for the request
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 120000);
@@ -71,14 +74,28 @@ export async function ingestRepository(data: IngestRequest): Promise<{ status: s
 
     clearTimeout(timeoutId);
 
+    console.log(`[AI Service] Response status: ${response.status}`);
+
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ detail: 'Unknown error' }));
-      throw new Error(error.detail || `HTTP ${response.status}`);
+      const errorText = await response.text();
+      console.error(`[AI Service] Error response:`, errorText);
+      
+      let errorDetail;
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorDetail = errorJson.detail || errorJson.message || errorText;
+      } catch {
+        errorDetail = errorText;
+      }
+      
+      throw new Error(`AI Service returned ${response.status}: ${errorDetail}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+    console.log(`[AI Service] Success:`, result);
+    return result;
   } catch (error) {
-    console.error('Repository ingestion failed:', error);
+    console.error('[AI Service] Repository ingestion failed:', error);
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('Ingestion request timed out after 2 minutes');
     }
