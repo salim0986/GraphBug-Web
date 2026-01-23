@@ -12,6 +12,7 @@ export async function GET(req: Request) {
   const session = await auth();
   
   if (!session?.user?.id) {
+    console.log(`❌ [SETUP CALLBACK] No session found - redirecting to login`);
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
@@ -20,10 +21,11 @@ export async function GET(req: Request) {
   const setupAction = searchParams.get("setup_action");
 
   if (!installationId) {
+    console.log(`❌ [SETUP CALLBACK] No installation_id in query params`);
     return NextResponse.redirect(new URL("/dashboard?error=no_installation", req.url));
   }
 
-  console.log(`\n🔗 [SETUP CALLBACK] User ${session.user.email} completing setup`);
+  console.log(`\n🔗 [SETUP CALLBACK] User ${session.user.email} (ID: ${session.user.id}) completing setup`);
   console.log(`   Installation ID: ${installationId}`);
   console.log(`   Action: ${setupAction}`);
 
@@ -49,6 +51,7 @@ export async function GET(req: Request) {
       
       console.log(`   ✅ Linked existing installation to user ${session.user.email}`);
       console.log(`      Installation record ID: ${updated.id}`);
+      console.log(`      User ID stored: ${updated.userId}`);
       
       // Verify repos are there
       const repos = await db

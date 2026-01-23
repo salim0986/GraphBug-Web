@@ -2,8 +2,9 @@
 
 export default function Dashboard() {
   const appName = "graph-bug";
-  const setupCallbackUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/github/setup`;
-  const installUrl = `https://github.com/apps/${appName}/installations/new?state=${encodeURIComponent(setupCallbackUrl)}`;
+  // GitHub will redirect to the Setup URL configured in the app settings after installation
+  // No need to pass state parameter - GitHub automatically redirects to Setup URL with installation_id
+  const installUrl = `https://github.com/apps/${appName}/installations/new`;
 
   return (
     <div className="space-y-8">

@@ -12,8 +12,11 @@ export async function GET() {
     const session = await auth();
     
     if (!session?.user?.id) {
+      console.log(`❌ [/api/repositories] No session found`);
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    console.log(`📊 [/api/repositories] Querying installations for user: ${session.user.id} (${session.user.email})`);
 
     // Get user's installations
     const installations = await db
@@ -22,6 +25,20 @@ export async function GET() {
       .where(eq(githubInstallations.userId, session.user.id));
 
     console.log(`📊 [/api/repositories] Found ${installations.length} installations for user ${session.user.id}`);
+    
+    // Debug: Check if there are ANY installations in the database
+    if (installations.length === 0) {
+      const allInstallations = await db.select().from(githubInstallations);
+      console.log(`   🔍 Total installations in DB: ${allInstallations.length}`);
+      if (allInstallations.length > 0) {
+        console.log(`   📋 All installations:`, allInstallations.map(i => ({
+          id: i.id,
+          userId: i.userId,
+          installationId: i.installationId,
+          accountLogin: i.accountLogin
+        })));
+      }
+    }
 
     if (installations.length === 0) {
       console.log(`   ℹ️ No installations found - user needs to install GitHub App`);
