@@ -86,5 +86,7 @@ export async function GET(req: Request) {
 
   console.log(`🔄 Redirecting user to dashboard...\n`);
   // Redirect back to dashboard with success message
-  return NextResponse.redirect(new URL("/dashboard?setup=success", req.url));
+  // Add timestamp to force cache bust and ensure fresh data fetch
+  const timestamp = Date.now();
+  return NextResponse.redirect(new URL(`/dashboard?setup=success&t=${timestamp}`, req.url));
 }

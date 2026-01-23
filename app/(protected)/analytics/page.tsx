@@ -28,7 +28,10 @@ export default function AnalyticsPage() {
   async function fetchData() {
     try {
       // Fetch repositories
-      const reposResponse = await fetch("/api/repositories");
+      const timestamp = Date.now();
+      const reposResponse = await fetch(`/api/repositories?t=${timestamp}`, {
+        cache: 'no-store',
+      });
       const reposData = await reposResponse.json();
       setRepositories(reposData.repositories || []);
 

@@ -46,7 +46,10 @@ export default function MainDashboard() {
 
   async function fetchData() {
     try {
-      const response = await fetch("/api/repositories");
+      const timestamp = Date.now();
+      const response = await fetch(`/api/repositories?t=${timestamp}`, {
+        cache: 'no-store',
+      });
       const data = await response.json();
       
       setStats(data.stats || {});

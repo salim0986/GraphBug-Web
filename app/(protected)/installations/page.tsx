@@ -48,7 +48,11 @@ export default function InstallationsPage() {
 
   async function fetchInstallations() {
     try {
-      const response = await fetch("/api/repositories");
+      // Add timestamp to prevent caching
+      const timestamp = Date.now();
+      const response = await fetch(`/api/repositories?t=${timestamp}`, {
+        cache: 'no-store',
+      });
       const data = await response.json();
       
       setInstallations(data.installations || []);
