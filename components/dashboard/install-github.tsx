@@ -1,10 +1,51 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 export default function Dashboard() {
+  const [linking, setLinking] = useState(false);
+  const [linkMessage, setLinkMessage] = useState<string | null>(null);
+  const [debugInfo, setDebugInfo] = useState<any>(null);
+  
   const appName = "graph-bug";
   // GitHub will redirect to the Setup URL configured in the app settings after installation
   // No need to pass state parameter - GitHub automatically redirects to Setup URL with installation_id
   const installUrl = `https://github.com/apps/${appName}/installations/new`;
+
+  useEffect(() => {
+    // Fetch debug info to show user what's in the database
+    fetch("/api/installations/debug")
+      .then(res => res.json())
+      .then(data => setDebugInfo(data))
+      .catch(err => console.error("Failed to fetch debug info:", err));
+  }, []);
+
+  async function handleManualLink() {
+    setLinking(true);
+    setLinkMessage(null);
+    
+    try {
+      const response = await fetch("/api/installations/link", {
+        method: "POST",
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        setLinkMessage(`✅ ${data.message}`);
+        // Reload page after 2 seconds
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } else {
+        setLinkMessage(`❌ ${data.error || 'Failed to link installations'}`);
+      }
+    } catch (error) {
+      setLinkMessage("❌ Error linking installations");
+      console.error(error);
+    } finally {
+      setLinking(false);
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -59,6 +100,45 @@ export default function Dashboard() {
         <p className="text-sm text-[var(--text)]/60">
           You'll be redirected to GitHub to complete the installation
         </p>
+      </div>
+
+      {/* Manual Link Option */}
+      <div className="bg-blue-50 rounded-xl p-6 border border-blue-200">
+        <h3 className="font-semibold text-blue-900 mb-2">Already installed the app?</h3>
+        <p className="text-sm text-blue-700 mb-4">
+          If you've already installed the GitHub app but it's not showing up, click the button below to manually link it to your account.
+        </p>
+        
+        {debugInfo && (
+          <div className="mb-4 p-3 bg-white rounded border border-blue-300 text-xs">
+            <div className="font-semibold text-blue-900 mb-2">Debug Info:</div>
+            <div className="space-y-1 text-blue-800">
+              <div>Your User ID: <code className="bg-blue-100 px-1 rounded">{debugInfo.currentUser?.id}</code></div>
+              <div>Total Installations in DB: <strong>{debugInfo.totalInstallations}</strong></div>
+              <div>Linked to You: <strong>{debugInfo.userInstallations?.count}</strong></div>
+              <div>Unlinked: <strong className="text-orange-600">{debugInfo.unlinkedInstallations?.count}</strong></div>
+              {debugInfo.unlinkedInstallations?.count > 0 && (
+                <div className="mt-2 pt-2 border-t border-blue-200">
+                  <div className="font-semibold mb-1">Unlinked installations:</div>
+                  {debugInfo.unlinkedInstallations.data.map((inst: any) => (
+                    <div key={inst.id} className="ml-2">• {inst.accountLogin} (ID: {inst.installationId})</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        
+        <button
+          onClick={handleManualLink}
+          disabled={linking}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {linking ? "Linking..." : "Link Existing Installation"}
+        </button>
+        {linkMessage && (
+          <p className="mt-3 text-sm font-medium">{linkMessage}</p>
+        )}
       </div>
 
       {/* Help Section */}
