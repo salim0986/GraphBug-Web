@@ -2,18 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { 
-  BarChart3, 
   GitBranch, 
-  TrendingUp, 
   AlertCircle, 
   CheckCircle2, 
   Clock, 
   RefreshCw,
   Github,
   Sparkles,
-  Network,
-  Activity,
-  Zap,
   Key,
   ExternalLink
 } from "lucide-react";
@@ -62,13 +57,36 @@ export default function MainDashboard() {
   const [lastRefresh, setLastRefresh] = useState<Date | null>(null);
 
   useEffect(() => {
+    // FIX: Immediate fetch on mount, especially after GitHub redirect
+    const urlParams = new URLSearchParams(window.location.search);
+    const fromSetup = urlParams.has('setup') || urlParams.has('installation_id');
+    
+    if (fromSetup) {
+      console.log("[Dashboard] Detected GitHub setup redirect - forcing immediate refresh");
+      // Clear URL parameters
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    
+    // Immediate first fetch
     fetchData();
     checkApiKey();
     
-    // Auto-refresh every 10 seconds to catch webhooks
+    // Faster polling after setup (5s for first minute, then 10s)
+    const pollInterval = fromSetup ? 5000 : 10000;
     const interval = setInterval(() => {
       fetchData();
-    }, 10000);
+    }, pollInterval);
+    
+    // If from setup, do extra aggressive polling for first 30 seconds
+    if (fromSetup) {
+      const aggressiveInterval = setInterval(() => {
+        fetchData();
+      }, 2000);
+      
+      setTimeout(() => {
+        clearInterval(aggressiveInterval);
+      }, 30000);
+    }
     
     return () => clearInterval(interval);
   }, []);

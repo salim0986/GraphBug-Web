@@ -144,14 +144,14 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
                 {isReviewing ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white animate-spin"></div>
-                    Starting Review...
+                    Starting Ingestion...
                   </>
                 ) : (
                   <>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Review Selected ({selectedRepos.size})
+                    Ingest Selected ({selectedRepos.size})
                   </>
                 )}
               </button>
@@ -162,7 +162,9 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
 
       <div className="divide-y divide-[var(--text)]/5">
         {repositories.map((repo) => {
-          const isSelectable = repo.ingestionStatus === "not_reviewed" || repo.ingestionStatus === "failed";
+          const isSelectable = repo.ingestionStatus === "not_reviewed" || 
+                               repo.ingestionStatus === "failed" || 
+                               repo.ingestionStatus === "pending";
           const isSelected = selectedRepos.has(repo.id);
           
           return (

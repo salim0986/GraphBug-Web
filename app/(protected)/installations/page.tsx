@@ -19,6 +19,7 @@ interface Installation {
   accountLogin: string;
   accountType: string;
   repositorySelection: string;
+  installationId:string;
   installationUrl: string;
   createdAt: string;
   updatedAt: string;
@@ -216,7 +217,7 @@ export default function InstallationsPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    href={`https://github.com/settings/installations/${installation.id}`}
+                    href={`https://github.com/settings/installations/${installation.installationId}`}
                     className="gap-1.5"
                   >
                     <SettingsIcon className="w-3.5 h-3.5" />

@@ -3,16 +3,52 @@
 import { signIn } from "next-auth/react"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Github, Mail, ArrowRight } from "lucide-react"
+import { Github, Mail, ArrowRight, AlertCircle } from "lucide-react"
+import { useSearchParams } from "next/navigation"
+import { Suspense } from "react"
 
-export default function SignIn() {
+function SignInContent() {
+  const searchParams = useSearchParams()
+  const error = searchParams.get("error")
+
   const resendAction = (formData: FormData) => {
     const email = formData.get("email") as string
     signIn("resend", { email, callbackUrl: "/dashboard" })
   }
 
+  const getErrorMessage = (error: string | null) => {
+    switch (error) {
+      case "OAuthAccountNotLinked":
+        return "This email is already registered. Please sign in with the same provider you used originally (GitHub, Google, or Email)."
+      case "OAuthSignin":
+        return "Error connecting to the authentication provider. Please try again."
+      case "OAuthCallback":
+        return "Error processing authentication. Please try again."
+      case "EmailSignin":
+        return "Error sending sign-in email. Please try again."
+      default:
+        return null
+    }
+  }
+
+  const errorMessage = getErrorMessage(error)
+
   return (
     <div className="w-full max-w-md space-y-8">
+      {/* Error Message */}
+      {errorMessage && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-red-50 border border-red-200 rounded-xl p-4 flex gap-3"
+        >
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-red-800">{errorMessage}</p>
+          </div>
+        </motion.div>
+      )}
+
       {/* Header */}
       <motion.div 
         initial={{ opacity: 0, y: -20 }}
@@ -129,5 +165,19 @@ export default function SignIn() {
         By continuing, you agree to our <a href="#" className="underline hover:text-[var(--primary)]">Terms</a> and <a href="#" className="underline hover:text-[var(--primary)]">Privacy Policy</a>
       </motion.p>
     </div>
+  )
+}
+
+export default function SignIn() {
+  return (
+    <Suspense fallback={
+      <div className="w-full max-w-md space-y-8">
+        <div className="flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary)]"></div>
+        </div>
+      </div>
+    }>
+      <SignInContent />
+    </Suspense>
   )
 }

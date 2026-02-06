@@ -8,6 +8,7 @@ import {
   bigint,
   real,
   index,
+  unique,
   pgEnum,
   json,
 } from "drizzle-orm/pg-core"
@@ -271,7 +272,7 @@ export const pullRequests = pgTable("pull_request", {
   index("pr_created_at_idx").on(table.createdAt),
   index("pr_author_idx").on(table.author),
   // Unique constraint: one PR number per repository
-  index("pr_repo_number_unique_idx").on(table.repositoryId, table.prNumber),
+  unique("pr_repo_number_unique").on(table.repositoryId, table.prNumber),
 ])
 
 /**
@@ -334,7 +335,7 @@ export const codeReviews = pgTable("code_review", {
   errorStack: text("error_stack"),
   
   // GitHub comment tracking
-  summaryCommentId: integer("summary_comment_id"), // GitHub comment ID
+  summaryCommentId: bigint("summary_comment_id", { mode: "number" }), // GitHub comment ID (can be very large)
   summaryCommentUrl: text("summary_comment_url"),
   inlineCommentsPosted: integer("inline_comments_posted").default(0),
   

@@ -34,7 +34,7 @@ import type {
 } from "./types"
 
 // Re-export types for convenience
-export type { NewPullRequest, UpdatePullRequest, PullRequest }
+export type { NewPullRequest, UpdatePullRequest, PullRequest, NewCodeReview, UpdateCodeReview, NewReviewComment, UpdateReviewComment }
 
 // ============================================================================
 // PULL REQUEST QUERIES

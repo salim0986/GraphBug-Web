@@ -29,6 +29,20 @@
       "when": 1769012558703,
       "tag": "0003_graceful_genesis",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1770387570419,
+      "tag": "0004_living_electro",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1770394086061,
+      "tag": "0005_sudden_maginty",
+      "breakpoints": true
     }
   ]
 }

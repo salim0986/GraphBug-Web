@@ -1,4 +1,4 @@
-import { db, githubInstallations, githubRepositories, users } from "@/db/schema";
+import { db, githubInstallations, githubRepositories, users, pullRequests } from "@/db/schema";
 import { Webhooks } from "@octokit/webhooks";
 import { eq, and } from "drizzle-orm";
 import crypto from "crypto";
@@ -204,6 +204,8 @@ async function handlePullRequestEvent(payload: any) {
   // Trigger review on PR open or update (new commits pushed)
   if (action === "opened" || action === "synchronize") {
     console.log(`🔍 PR ${action}: ${pull_request.html_url}`);
+    console.log(`   Repository: ${repository.full_name} (ID: ${repository.id})`);
+    console.log(`   Installation ID: ${installation.id}`);
     
     // Find the installation record
     const [installationRecord] = await db
@@ -212,9 +214,11 @@ async function handlePullRequestEvent(payload: any) {
       .where(eq(githubInstallations.installationId, installation.id));
 
     if (!installationRecord) {
-      console.error(`❌ Installation ${installation.id} not found`);
+      console.error(`❌ Installation ${installation.id} not found in database`);
       return new Response("Installation not found", { status: 404 });
     }
+    
+    console.log(`✅ Installation found in DB (ID: ${installationRecord.id}, User: ${installationRecord.userId || 'null'})`);
 
     // Check if this repository is in our database and has been ingested
     const [repoRecord] = await db
@@ -228,16 +232,33 @@ async function handlePullRequestEvent(payload: any) {
       );
 
     if (!repoRecord) {
-      console.log(`ℹ️ Repository ${repository.full_name} not found in database, skipping review`);
+      console.log(`ℹ️ Repository ${repository.full_name} not found in database`);
+      console.log(`   Looking for: installationId=${installationRecord.id}, repoId=${repository.id}`);
+      console.log(`   Creating repository record and triggering review...`);
+      
+      // Create repository record if it doesn't exist
+      const [newRepoRecord] = await db
+        .insert(githubRepositories)
+        .values({
+          installationId: installationRecord.id,
+          repoId: repository.id,
+          name: repository.name,
+          fullName: repository.full_name,
+          private: repository.private,
+          addedAt: new Date(),
+          ingestionStatus: "pending",
+        })
+        .returning();
+      
+      console.log(`✅ Repository record created (ID: ${newRepoRecord.id})`);
+      console.log(`🤖 Triggering AI review for PR #${pull_request.number} in ${repository.full_name}`);
+      await triggerAICodeReview(newRepoRecord.id, pull_request, installation.id, installationRecord.userId);
       return new Response("OK", { status: 200 });
     }
+    
+    console.log(`✅ Repository found in DB (Status: ${repoRecord.ingestionStatus})`);
 
-    if (repoRecord.ingestionStatus !== "completed") {
-      console.log(`⚠️ Repository ${repository.full_name} not yet ingested (status: ${repoRecord.ingestionStatus}), skipping review`);
-      return new Response("OK", { status: 200 });
-    }
-
-    // Trigger AI code review
+    // Trigger AI code review regardless of ingestion status
     console.log(`🤖 Triggering AI review for PR #${pull_request.number} in ${repository.full_name}`);
     await triggerAICodeReview(repoRecord.id, pull_request, installation.id, installationRecord.userId);
   }
@@ -301,6 +322,86 @@ async function triggerAICodeReview(repoDbId: string, pullRequest: any, installat
   try {
     console.log(`📝 Starting AI review for PR #${pullRequest.number}: ${pullRequest.title}`);
     
+    // Create or update PR record in database
+    console.log(`💾 Creating/updating PR record in database...`);
+    
+    let prRecord;
+    try {
+      // Try to find existing PR first
+      const existing = await db
+        .select()
+        .from(pullRequests)
+        .where(
+          and(
+            eq(pullRequests.repositoryId, repoDbId),
+            eq(pullRequests.prNumber, pullRequest.number)
+          )
+        )
+        .limit(1);
+      
+      if (existing.length > 0) {
+        // Update existing PR
+        console.log(`   Found existing PR record, updating...`);
+        [prRecord] = await db
+          .update(pullRequests)
+          .set({
+            title: pullRequest.title,
+            description: pullRequest.body || null,
+            headCommitSha: pullRequest.head.sha,
+            filesChanged: pullRequest.changed_files || 0,
+            additions: pullRequest.additions || 0,
+            deletions: pullRequest.deletions || 0,
+            totalChanges: (pullRequest.additions || 0) + (pullRequest.deletions || 0),
+            updatedAt: new Date(),
+          })
+          .where(eq(pullRequests.id, existing[0].id))
+          .returning();
+      } else {
+        // Create new PR
+        console.log(`   Creating new PR record...`);
+        [prRecord] = await db
+          .insert(pullRequests)
+          .values({
+            prNumber: pullRequest.number,
+            prId: pullRequest.id,
+            repositoryId: repoDbId,
+            title: pullRequest.title,
+            description: pullRequest.body || null,
+            author: pullRequest.user.login,
+            authorAvatarUrl: pullRequest.user.avatar_url,
+            htmlUrl: pullRequest.html_url,
+            diffUrl: pullRequest.diff_url,
+            patchUrl: pullRequest.patch_url,
+            baseBranch: pullRequest.base.ref,
+            headBranch: pullRequest.head.ref,
+            baseCommitSha: pullRequest.base.sha,
+            headCommitSha: pullRequest.head.sha,
+            status: pullRequest.state === "closed" ? "closed" : "open",
+            isDraft: pullRequest.draft || false,
+            filesChanged: pullRequest.changed_files || 0,
+            additions: pullRequest.additions || 0,
+            deletions: pullRequest.deletions || 0,
+            totalChanges: (pullRequest.additions || 0) + (pullRequest.deletions || 0),
+            reviewStatus: "pending",
+            reviewRequestedAt: new Date(),
+          })
+          .returning();
+      }
+      
+      console.log(`✅ PR record ${existing.length > 0 ? 'updated' : 'created'} (ID: ${prRecord.id})`);
+    } catch (dbError) {
+      console.error(`❌ Failed to create/update PR record in database!`);
+      console.error(`   Error:`, dbError);
+      if (dbError instanceof Error) {
+        console.error(`   Message: ${dbError.message}`);
+        if ('code' in dbError) {
+          console.error(`   DB Error Code: ${(dbError as any).code}`);
+          console.error(`   DB Error Detail: ${(dbError as any).detail}`);
+        }
+      }
+      throw dbError; // Re-throw to be caught by outer try-catch
+    }
+    
     // Fetch user's Gemini API key if userId exists
     let geminiApiKey: string | null = null;
     if (userId) {
@@ -339,73 +440,65 @@ async function triggerAICodeReview(repoDbId: string, pullRequest: any, installat
     console.log(`   ➕ Additions: +${pullRequest.additions || 0}`);
     console.log(`   ➖ Deletions: -${pullRequest.deletions || 0}`);
     
-    // Call PR processing endpoint to fetch and store PR data
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-    const processEndpoint = `${baseUrl}/api/pr/process`;
-    
-    console.log(`🔄 Calling PR processing endpoint: ${processEndpoint}`);
-    
-    const processResponse = await fetch(processEndpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-internal-call': 'true',
-      },
-      body: JSON.stringify({
-        owner,
-        repo,
-        prNumber,
-        installationId,
-        action: 'opened', // or 'synchronize' based on webhook event
-      }),
-    });
-
-    if (!processResponse.ok) {
-      const errorData = await processResponse.json();
-      console.error(`❌ PR processing failed:`, errorData);
-      throw new Error(`PR processing failed: ${errorData.error || processResponse.statusText}`);
-    }
-
-    const processData = await processResponse.json();
-    console.log(`✅ PR data processed successfully (DB ID: ${processData.pullRequestId})`);
-    console.log(`   📊 Stats: ${processData.stats.files} files, ${processData.stats.changes} changes`);
-    console.log(`   🎯 Complexity: ${processData.complexity.toFixed(2)}`);
-    console.log(`   🔍 Deep review required: ${processData.metadata.requiresDeepReview}`);
-    
-    // Trigger AI review workflow in ai-service
+    // Trigger AI review workflow directly - let AI service handle data fetching
+    const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
     console.log(`🚀 Triggering AI review workflow in ai-service...`);
+    console.log(`   🌐 AI Service URL: ${aiServiceUrl}/review`);
     
     try {
-      const aiServiceUrl = process.env.NEXT_PUBLIC_AI_SERVICE_URL || 'http://localhost:8000';
+      const reviewPayload = {
+        owner,
+        repo,
+        pr_number: prNumber,
+        installation_id: installationId.toString(),
+        repo_db_id: repoDbId,
+        pull_request_id: prRecord.id,  // PR database UUID (matches AI service field name)
+        gemini_api_key: geminiApiKey,
+      };
+      
+      console.log(`   📦 Sending payload:`, {
+        owner,
+        repo,
+        pr_number: prNumber,
+        installation_id: installationId.toString(),
+        repo_db_id: repoDbId,
+        pull_request_id: prRecord.id,
+        has_gemini_key: !!geminiApiKey,
+      });
+      
       const reviewResponse = await fetch(`${aiServiceUrl}/review`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          owner,
-          repo,
-          pr_number: prNumber,
-          installation_id: installationId.toString(),
-          pull_request_id: processData.pullRequestId,
-          context: processData.context,
-          gemini_api_key: geminiApiKey, // Pass user's API key to AI service
-        }),
+        body: JSON.stringify(reviewPayload),
+        signal: AbortSignal.timeout(10000), // 10 seconds - just to trigger the AI service
       });
+
+      console.log(`   📡 AI service response status: ${reviewResponse.status} ${reviewResponse.statusText}`);
 
       if (!reviewResponse.ok) {
         const errorText = await reviewResponse.text();
-        console.error(`❌ AI service returned error: ${reviewResponse.status} ${errorText}`);
-        throw new Error(`AI service error: ${reviewResponse.status}`);
+        console.error(`❌ AI service returned error: ${reviewResponse.status}`);
+        console.error(`   Response body: ${errorText}`);
+        throw new Error(`AI service error: ${reviewResponse.status} - ${errorText}`);
       }
 
       const reviewData = await reviewResponse.json();
-      console.log(`✅ AI review workflow started:`, reviewData);
+      console.log(`✅ AI review workflow started successfully!`);
       console.log(`   🔑 Review ID: ${reviewData.review_id || 'N/A'}`);
+      console.log(`   📊 Status: ${reviewData.status}`);
       console.log(`   ⏱️  Estimated time: ${reviewData.estimated_time || 'Unknown'}`);
     } catch (aiError) {
-      console.error(`❌ Failed to trigger AI service:`, aiError);
-      console.error(`   Make sure ai-service is running on ${process.env.NEXT_PUBLIC_AI_SERVICE_URL || 'http://localhost:8000'}`);
+      console.error(`❌ CRITICAL: Failed to trigger AI service!`);
+      console.error(`   🌐 Target URL: ${aiServiceUrl}/review`);
+      console.error(`   ❗ Error type: ${aiError instanceof Error ? aiError.constructor.name : typeof aiError}`);
+      console.error(`   💬 Error message: ${aiError instanceof Error ? aiError.message : String(aiError)}`);
+      if (aiError instanceof Error && aiError.stack) {
+        console.error(`   📚 Stack trace: ${aiError.stack.split('\n').slice(0, 3).join('\n')}`);
+      }
+      console.error(`   ⚙️  Make sure ai-service is running on ${aiServiceUrl}`);
+      console.error(`   💡 Check: 1) Service is running, 2) Port is correct, 3) No firewall blocking`);
       // Don't throw - we've already saved the PR, just log the error
     }
     

@@ -4,11 +4,13 @@ import NextAuth from "next-auth"
 import GitHub from "next-auth/providers/github";
 import Google from "next-auth/providers/google"
 import Resend from "next-auth/providers/resend";
-import { db } from "./db/schema";
+import { db, users, accounts } from "./db/schema";
 import { sendVerificationRequest } from "./lib/email-template";
+import { eq, and } from "drizzle-orm";
  
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: DrizzleAdapter(db as any),
+  trustHost: true, // Trust all hosts (required for NextAuth v5)
   providers: [
     Google, 
     GitHub, 
@@ -23,10 +25,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     error: '/login/error',
   },
   callbacks: {
-    async signIn({ user, account, profile }) {
-      // Allow all sign-ins
-      return true;
-    },
     async redirect({ url, baseUrl }) {
       // Allows relative callback URLs
       if (url.startsWith("/")) return `${baseUrl}${url}`;

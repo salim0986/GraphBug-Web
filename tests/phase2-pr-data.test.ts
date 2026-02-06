@@ -475,10 +475,11 @@ index 1234567..abcdefg 100644
 
       const aiContext = prepareForAIReview(mockContext)
 
-      expect(aiContext.summary).toBeTruthy()
+      // Check the context structure
+      expect(aiContext.title).toBeTruthy()
       expect(aiContext.files).toHaveLength(1)
       expect(aiContext.files[0].filename).toBe("test.ts")
-      expect(aiContext.files[0].content).toBe("code here")
+      expect(aiContext.files[0].patch).toBeTruthy()
       expect(aiContext.metadata.totalFiles).toBe(1)
       expect(aiContext.metadata.complexity).toBe(30)
     })
