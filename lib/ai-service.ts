@@ -57,9 +57,16 @@ export async function checkAIServiceHealth(): Promise<HealthStatus> {
  * This processes the repo and builds knowledge graphs + vector embeddings
  */
 export async function ingestRepository(data: IngestRequest): Promise<{ status: string; repo_id: string }> {
+  const timestamp = new Date().toISOString();
+  
   try {
-    console.log(`[AI Service] Sending ingest request to ${AI_SERVICE_URL}/ingest`);
-    console.log(`[AI Service] Request data:`, JSON.stringify(data, null, 2));
+    console.log(`[${timestamp}] [AI Service] ========================================`);
+    console.log(`[${timestamp}] [AI Service] 📥 SENDING INGESTION REQUEST`);
+    console.log(`[${timestamp}] [AI Service] Endpoint: ${AI_SERVICE_URL}/ingest`);
+    console.log(`[${timestamp}] [AI Service] Repo: ${data.repo_url}`);
+    console.log(`[${timestamp}] [AI Service] Repo ID: ${data.repo_id}`);
+    console.log(`[${timestamp}] [AI Service] Installation ID: ${data.installation_id}`);
+    console.log(`[${timestamp}] [AI Service] ========================================`);
 
     // Add timeout of 2 minutes for the request
     const controller = new AbortController();
@@ -74,11 +81,12 @@ export async function ingestRepository(data: IngestRequest): Promise<{ status: s
 
     clearTimeout(timeoutId);
 
-    console.log(`[AI Service] Response status: ${response.status}`);
+    const responseTimestamp = new Date().toISOString();
+    console.log(`[${responseTimestamp}] [AI Service] Response status: ${response.status}`);
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`[AI Service] Error response:`, errorText);
+      console.error(`[${responseTimestamp}] [AI Service] ❌ ERROR RESPONSE:`, errorText);
       
       let errorDetail;
       try {
@@ -92,10 +100,16 @@ export async function ingestRepository(data: IngestRequest): Promise<{ status: s
     }
 
     const result = await response.json();
-    console.log(`[AI Service] Success:`, result);
+    console.log(`[${responseTimestamp}] [AI Service] ✅ SUCCESS:`, JSON.stringify(result, null, 2));
+    console.log(`[${responseTimestamp}] [AI Service] ========================================`);
     return result;
   } catch (error) {
-    console.error('[AI Service] Repository ingestion failed:', error);
+    const errorTimestamp = new Date().toISOString();
+    console.error(`[${errorTimestamp}] [AI Service] ========================================`);
+    console.error(`[${errorTimestamp}] [AI Service] ❌ INGESTION FAILED`);
+    console.error(`[${errorTimestamp}] [AI Service] Error:`, error);
+    console.error(`[${errorTimestamp}] [AI Service] ========================================`);
+    
     if (error instanceof Error && error.name === 'AbortError') {
       throw new Error('Ingestion request timed out after 2 minutes');
     }
