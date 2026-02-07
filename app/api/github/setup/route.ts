@@ -30,58 +30,94 @@ export async function GET(req: Request) {
   console.log(`   Action: ${setupAction}`);
 
   try {
-    // Check if installation already exists (from webhook)
-    const existing = await db
-      .select()
-      .from(githubInstallations)
-      .where(eq(githubInstallations.installationId, parseInt(installationId)));
+    // Retry logic for race conditions
+    let retries = 3;
+    let success = false;
+    
+    while (retries > 0 && !success) {
+      try {
+        // Check if installation already exists (from webhook)
+        const existing = await db
+          .select()
+          .from(githubInstallations)
+          .where(eq(githubInstallations.installationId, parseInt(installationId)));
 
-    console.log(`   Checking for existing installation... Found: ${existing.length}`);
+        console.log(`   Checking for existing installation... Found: ${existing.length} (Attempt ${4 - retries}/3)`);
 
-    if (existing.length > 0) {
-      // Installation exists (webhook fired first), just update userId
-      const [updated] = await db
-        .update(githubInstallations)
-        .set({ 
-          userId: session.user.id, 
-          updatedAt: new Date() 
-        })
-        .where(eq(githubInstallations.installationId, parseInt(installationId)))
-        .returning();
-      
-      console.log(`   ✅ Linked existing installation to user ${session.user.email}`);
-      console.log(`      Installation record ID: ${updated.id}`);
-      console.log(`      User ID stored: ${updated.userId}`);
-      
-      // Verify repos are there
-      const repos = await db
-        .select()
-        .from(githubRepositories)
-        .where(eq(githubRepositories.installationId, updated.id));
-      console.log(`      Repositories available: ${repos.length}`);
-      if (repos.length === 0) {
-        console.warn(`      ⚠️ WARNING: No repositories found yet!`);
-        console.warn(`      This is normal if webhook hasn't processed yet (wait 5-10 seconds)`);
+        if (existing.length > 0) {
+          // Installation exists (webhook fired first), just update userId
+          const [updated] = await db
+            .update(githubInstallations)
+            .set({ 
+              userId: session.user.id, 
+              updatedAt: new Date() 
+            })
+            .where(eq(githubInstallations.installationId, parseInt(installationId)))
+            .returning();
+          
+          console.log(`   ✅ Linked existing installation to user ${session.user.email}`);
+          console.log(`      Installation record ID: ${updated.id}`);
+          console.log(`      User ID stored: ${updated.userId}`);
+          
+          // Verify the update worked
+          const verify = await db
+            .select()
+            .from(githubInstallations)
+            .where(eq(githubInstallations.installationId, parseInt(installationId)));
+          
+          if (verify[0]?.userId === session.user.id) {
+            console.log(`   ✅ Verified userId update successful`);
+            success = true;
+          } else {
+            console.warn(`   ⚠️ userId verification failed, retrying...`);
+            retries--;
+            if (retries > 0) await new Promise(resolve => setTimeout(resolve, 500));
+            continue;
+          }
+          
+          // Verify repos are there
+          const repos = await db
+            .select()
+            .from(githubRepositories)
+            .where(eq(githubRepositories.installationId, updated.id));
+          console.log(`      Repositories available: ${repos.length}`);
+          if (repos.length === 0) {
+            console.warn(`      ⚠️ WARNING: No repositories found yet!`);
+            console.warn(`      This is normal if webhook hasn't processed yet (wait 5-10 seconds)`);
+          }
+        } else {
+          // Installation doesn't exist yet (webhook hasn't fired), create minimal record
+          console.log(`   ⏳ Installation not found - creating placeholder`);
+          console.log(`      (Webhook will populate details when it fires)`);
+          
+          const [newInstall] = await db.insert(githubInstallations).values({
+            userId: session.user.id,
+            installationId: parseInt(installationId),
+            accountLogin: "pending", // Will be updated by webhook
+            accountType: "pending",
+            targetType: "pending",
+            installedAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .returning();
+          
+          console.log(`   ✅ Created placeholder installation`);
+          console.log(`      Installation record ID: ${newInstall.id}`);
+          console.log(`      Waiting for webhook to populate repository list...`);
+          success = true;
+        }
+      } catch (retryError) {
+        console.error(`   ❌ Attempt ${4 - retries} failed:`, retryError);
+        retries--;
+        if (retries > 0) {
+          console.log(`   🔄 Retrying... (${retries} attempts left)`);
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
       }
-    } else {
-      // Installation doesn't exist yet (webhook hasn't fired), create minimal record
-      console.log(`   ⏳ Installation not found - creating placeholder`);
-      console.log(`      (Webhook will populate details when it fires)`);
-      
-      const [newInstall] = await db.insert(githubInstallations).values({
-        userId: session.user.id,
-        installationId: parseInt(installationId),
-        accountLogin: "pending", // Will be updated by webhook
-        accountType: "pending",
-        targetType: "pending",
-        installedAt: new Date(),
-        updatedAt: new Date(),
-      })
-      .returning();
-      
-      console.log(`   ✅ Created placeholder installation`);
-      console.log(`      Installation record ID: ${newInstall.id}`);
-      console.log(`      Waiting for webhook to populate repository list...`);
+    }
+    
+    if (!success) {
+      console.error(`   ❌ Failed to link installation after all retries`);
     }
   } catch (error) {
     console.error("❌ Error creating/updating installation:", error);
