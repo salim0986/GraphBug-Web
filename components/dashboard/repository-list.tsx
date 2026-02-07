@@ -52,7 +52,7 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
       );
 
       await Promise.all(promises);
-      
+
       // Clear selection and refresh
       setSelectedRepos(new Set());
       setTimeout(() => {
@@ -117,41 +117,41 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
   }
 
   return (
-    <div className="bg-white border border-[var(--text)]/5 overflow-hidden">
-      <div className="p-6 border-b border-[var(--text)]/5">
-        <div className="flex items-center justify-between">
+    <div className="bg-white border border-[var(--text)]/5 overflow-hidden rounded-xl">
+      <div className="p-4 md:p-6 border-b border-[var(--text)]/5">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold tracking-tight text-[var(--text)]">Repositories</h2>
-            <p className="text-sm text-[var(--text)]/50 mt-1.5 font-medium">
+            <p className="text-sm text-[var(--text)]/50 mt-1 font-medium">
               Select repositories to review with AI
             </p>
           </div>
-          
+
           {selectableRepos.length > 0 && (
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3">
               <button
                 onClick={toggleAll}
-                className="px-4 py-2 text-sm font-medium border border-[var(--text)]/10 hover:border-[var(--text)]/20 hover:bg-[var(--background)]/50 transition-all"
+                className="flex-1 md:flex-none px-3 py-2 text-sm font-medium border border-[var(--text)]/10 hover:border-[var(--text)]/20 hover:bg-[var(--background)]/50 transition-all rounded-lg"
               >
                 {selectedRepos.size === selectableRepos.length ? "Deselect All" : "Select All"}
               </button>
-              
+
               <button
                 onClick={handleReviewSelected}
                 disabled={selectedRepos.size === 0 || isReviewing}
-                className="px-6 py-2.5 text-sm bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-[var(--text)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
+                className="flex-[2] md:flex-none px-4 py-2.5 text-sm bg-[var(--primary)] hover:bg-[var(--primary)]/90 text-[var(--text)] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold rounded-lg shadow-sm"
               >
                 {isReviewing ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white animate-spin"></div>
-                    Starting Ingestion...
+                    <span className="hidden sm:inline">Starting...</span>
                   </>
                 ) : (
                   <>
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    Ingest Selected ({selectedRepos.size})
+                    Ingest ({selectedRepos.size})
                   </>
                 )}
               </button>
@@ -162,16 +162,16 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
 
       <div className="divide-y divide-[var(--text)]/5">
         {repositories.map((repo) => {
-          const isSelectable = repo.ingestionStatus === "not_reviewed" || 
-                               repo.ingestionStatus === "failed" || 
-                               repo.ingestionStatus === "pending";
+          const isSelectable = repo.ingestionStatus === "not_reviewed" ||
+            repo.ingestionStatus === "failed" ||
+            repo.ingestionStatus === "pending";
           const isSelected = selectedRepos.has(repo.id);
-          
+
           return (
-            <div key={repo.id} className={`p-6 transition-all duration-200 ${isSelectable ? 'hover:bg-[var(--background)]/30' : 'bg-[var(--background)]/10'}`}>
-              <div className="flex items-start gap-4">
+            <div key={repo.id} className={`p-4 md:p-6 transition-all duration-200 ${isSelectable ? 'hover:bg-[var(--background)]/30' : 'bg-[var(--background)]/10'}`}>
+              <div className="flex items-start gap-3 md:gap-4">
                 {isSelectable && (
-                  <div className="pt-1">
+                  <div className="pt-1 shrink-0">
                     <input
                       type="checkbox"
                       checked={isSelected}
@@ -180,40 +180,45 @@ export default function RepositoryList({ repositories, onRefresh }: { repositori
                     />
                   </div>
                 )}
-                
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="font-semibold text-lg">{repo.fullName}</h3>
-                    {repo.private && (
-                      <span className="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                        Private
-                      </span>
-                    )}
-                    <StatusBadge status={repo.ingestionStatus} />
+
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
+                    <h3 className="font-semibold text-base md:text-lg truncate pr-2">{repo.fullName}</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {repo.private && (
+                        <span className="px-1.5 py-0.5 text-xs bg-gray-100 text-gray-600 rounded border border-gray-200">
+                          Private
+                        </span>
+                      )}
+                      <StatusBadge status={repo.ingestionStatus} />
+                    </div>
                   </div>
 
                   {repo.ingestionStatus === "failed" && repo.ingestionError && (
                     <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg">
-                      <p className="text-sm text-red-800">
+                      <p className="text-sm text-red-800 break-words">
                         <strong>Error:</strong> {repo.ingestionError}
                       </p>
                     </div>
                   )}
 
-                  <div className="flex items-center gap-4 text-sm text-[var(--text)]/60">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4 text-xs sm:text-sm text-[var(--text)]/60">
                     <span>Added {new Date(repo.addedAt).toLocaleDateString()}</span>
                     {repo.lastSyncedAt && (
-                      <span>Last synced {new Date(repo.lastSyncedAt).toLocaleDateString()}</span>
+                      <span className="hidden sm:inline">•</span>
+                    )}
+                    {repo.lastSyncedAt && (
+                      <span>Synced {new Date(repo.lastSyncedAt).toLocaleDateString()}</span>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="hidden md:flex items-center gap-2">
                   <a
                     href={`https://github.com/${repo.fullName}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-4 py-2 text-sm font-medium border border-[var(--text)]/10 hover:border-[var(--text)]/20 hover:bg-[var(--background)]/50 transition-all"
+                    className="px-3 py-1.5 text-xs font-medium border border-[var(--text)]/10 hover:border-[var(--text)]/20 hover:bg-[var(--background)]/50 transition-all rounded-lg whitespace-nowrap"
                   >
                     View on GitHub
                   </a>

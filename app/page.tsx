@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, Github, Sparkles, Network, Zap, Shield, Code2, GitPullRequest, Check, ChevronRight, Menu, X } from "lucide-react";
+import { ArrowRight, Github, Sparkles, Network, Zap, Shield, Code2, GitPullRequest, Check, ChevronRight, AlignLeft, X } from "lucide-react";
 import { motion, useScroll, useSpring, AnimatePresence, Variants } from "framer-motion";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -39,32 +39,32 @@ export default function Home() {
         className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-[var(--primary)] to-[var(--secondary)] origin-left z-[100]"
         style={{ scaleX }}
       />
-      
+
       {/* Animated Background Grid */}
       <div className="fixed inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))] pointer-events-none opacity-40" />
-      
+
       {/* Floating Orbs for "Wow" Effect */}
-      <motion.div 
-        animate={{ 
-          x: [0, 100, 0], 
+      <motion.div
+        animate={{
+          x: [0, 100, 0],
           y: [0, -50, 0],
-          opacity: [0.3, 0.5, 0.3] 
+          opacity: [0.3, 0.5, 0.3]
         }}
         transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
         className="fixed top-20 right-[-100px] w-96 h-96 bg-[var(--primary)]/30 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob pointer-events-none"
       />
-      <motion.div 
-        animate={{ 
-          x: [0, -100, 0], 
+      <motion.div
+        animate={{
+          x: [0, -100, 0],
           y: [0, 50, 0],
-          opacity: [0.3, 0.5, 0.3] 
+          opacity: [0.3, 0.5, 0.3]
         }}
         transition={{ duration: 25, repeat: Infinity, ease: "linear", delay: 2 }}
         className="fixed bottom-20 left-[-100px] w-96 h-96 bg-[var(--secondary)]/30 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob pointer-events-none"
       />
 
       {/* Header */}
-      <motion.header 
+      <motion.header
         initial={{ y: -100 }}
         animate={{ y: 0 }}
         transition={{ duration: 0.5 }}
@@ -72,16 +72,16 @@ export default function Home() {
       >
         <nav className="container mx-auto px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-3 group">
-            <img 
-              src="/logo.png" 
-              alt="Graph Bug Logo" 
+            <img
+              src="/logo.png"
+              alt="Graph Bug Logo"
               className="w-10 h-10 rounded-xl group-hover:scale-105 transition-transform duration-300"
             />
             <span className="text-xl font-bold text-[var(--text)]">
               Graph Bug
             </span>
           </Link>
-          
+
           <div className="hidden md:flex items-center gap-8">
             <Link href="#features" className="text-sm font-medium text-[var(--text)]/70 hover:text-[var(--primary)] transition-colors relative group">
               Features
@@ -96,24 +96,27 @@ export default function Home() {
               <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[var(--primary)] transition-all group-hover:w-full" />
             </Link>
           </div>
-          
+
           <div className="flex items-center gap-4">
-            {!session?.user && <Link 
-              href="/login" 
+            {!session?.user && <Link
+              href="/login"
               className="hidden md:block px-5 py-2.5 text-sm font-semibold text-[var(--text)]/70 hover:text-[var(--primary)] transition-colors"
             >
               Sign In
             </Link>}
             <Button href={session?.user ? "/dashboard" : "/login"} size="sm" className="hidden md:flex shadow-none">
-                {session?.user ? "Go to Dashboard" : "Start For Free"}
-                <ChevronRight className="w-4 h-4 ml-1" />
-              </Button>
-            <button className="md:hidden p-2 text-[var(--text)]/70" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+              {session?.user ? "Go to Dashboard" : "Start For Free"}
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+            <button
+              className="md:hidden p-2.5 text-[var(--text)] hover:bg-[var(--text)]/5 rounded-xl active:scale-95 transition-all text-[var(--primary)] hover:text-[var(--primary)]/80"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <AlignLeft className="w-7 h-7" strokeWidth={2.5} />}
             </button>
           </div>
         </nav>
-        
+
         {/* Mobile Menu */}
         <AnimatePresence>
           {isMenuOpen && (
@@ -144,7 +147,7 @@ export default function Home() {
       {/* Hero Section */}
       <main className="relative pt-24 pb-16 lg:pt-32 lg:pb-32 overflow-hidden">
         <div className="container mx-auto px-6 lg:px-8 relative z-10">
-          <motion.div 
+          <motion.div
             initial="hidden"
             animate="visible"
             variants={staggerContainer}
@@ -163,7 +166,7 @@ export default function Home() {
                 </span>
               </div>
             </motion.div>
-            
+
             {/* Headline */}
             <motion.h1 variants={fadeInUp} className="text-5xl md:text-7xl lg:text-8xl font-extrabold tracking-tight leading-[1.1]">
               Code Reviews with
@@ -175,22 +178,22 @@ export default function Home() {
                 </span>
               </span>
             </motion.h1>
-            
+
             {/* Subtitle */}
             <motion.p variants={fadeInUp} className="text-xl md:text-2xl text-[var(--text)]/70 max-w-3xl mx-auto leading-relaxed font-medium">
-              Existing AI tools guess. Graph Bug <b className="text-[var(--text)]">understands</b>. 
+              Existing AI tools guess. Graph Bug <b className="text-[var(--text)]">understands</b>.
               Powered by Knowledge Graphs to catch the deep logical bugs that LLMs miss.
             </motion.p>
 
             {/* CTA Buttons */}
             <motion.div variants={fadeInUp} className="flex flex-col sm:flex-row items-center justify-center gap-6 pt-4">
-              <Button href="/login" size="lg" className="rounded-2xl px-10 py-7 text-xl shadow-xl shadow-[var(--primary)]/30 hover:shadow-2xl hover:shadow-[var(--primary)]/40 hover:-translate-y-1">
-                  Analyze My Code Free
-                  <ArrowRight className="w-6 h-6 ml-2" />
+              <Button href="/login" size="lg" className="rounded-2xl px-6 py-4 text-lg md:px-10 md:py-7 md:text-xl shadow-xl shadow-[var(--primary)]/30 hover:shadow-2xl hover:shadow-[var(--primary)]/40 hover:-translate-y-1">
+                Analyze My Code Free
+                <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2" />
               </Button>
-              
-              <motion.a 
-                href="https://github.com" 
+
+              <motion.a
+                href="https://github.com/salim0986/GraphBug-Web"
                 target="_blank"
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.02 }}
@@ -201,16 +204,16 @@ export default function Home() {
                 See How It Works
               </motion.a>
             </motion.div>
-            
+
             {/* Social Proof */}
             <motion.div variants={fadeInUp} className="pt-16 flex flex-col items-center gap-4">
               <p className="text-sm font-semibold uppercase tracking-wider text-[var(--text)]/40">Trusted by developers at</p>
               <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
-                 {/* Placeholders for logos - would use SVGs in production */}
-                 <div className="text-xl font-bold font-mono text-[var(--text)]">ACME Corp</div>
-                 <div className="text-xl font-bold font-mono text-[var(--text)]">TechnoLogic</div>
-                 <div className="text-xl font-bold font-mono text-[var(--text)]">DataFlow</div>
-                 <div className="text-xl font-bold font-mono text-[var(--text)]">CloudSystems</div>
+                {/* Placeholders for logos - would use SVGs in production */}
+                <div className="text-xl font-bold font-mono text-[var(--text)]">ACME Corp</div>
+                <div className="text-xl font-bold font-mono text-[var(--text)]">TechnoLogic</div>
+                <div className="text-xl font-bold font-mono text-[var(--text)]">DataFlow</div>
+                <div className="text-xl font-bold font-mono text-[var(--text)]">CloudSystems</div>
               </div>
             </motion.div>
           </motion.div>
@@ -220,31 +223,31 @@ export default function Home() {
       {/* Features Section - Bento Grid Style */}
       <section id="features" className="py-32 bg-white relative">
         <div className="container mx-auto px-6 lg:px-8">
-          <motion.div 
-             initial={{ opacity: 0, y: 20 }}
-             whileInView={{ opacity: 1, y: 0 }}
-             viewport={{ once: true }}
-             className="text-center mb-20"
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-20"
           >
             <h2 className="text-4xl md:text-5xl font-bold mb-6 text-[var(--text)]">
-               Why simple LLMs aren't enough
+              Why simple LLMs aren't enough
             </h2>
             <p className="text-xl text-[var(--text)]/70 max-w-2xl mx-auto">
               Graph Bug combines the reasoning of LLMs with the structured memory of a Knowledge Graph.
             </p>
           </motion.div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
             {/* Large Feature */}
-            <motion.div 
-               initial={{ opacity: 0, x: -20 }}
-               whileInView={{ opacity: 1, x: 0 }}
-               viewport={{ once: true }}
-               transition={{ duration: 0.5 }}
-               className="md:col-span-2 p-10 rounded-[2rem] bg-white border border-[var(--text)]/10 hover:border-[var(--primary)]/20 hover:shadow-2xl transition-all duration-500 group overflow-hidden relative"
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="md:col-span-2 p-10 rounded-[2rem] bg-white border border-[var(--text)]/10 hover:border-[var(--primary)]/20 hover:shadow-2xl transition-all duration-500 group overflow-hidden relative"
             >
               <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:opacity-20 transition-opacity">
-                 <Network className="w-64 h-64 text-[var(--primary)]" />
+                <Network className="w-64 h-64 text-[var(--primary)]" />
               </div>
               <div className="relative z-10">
                 <div className="w-16 h-16 bg-[var(--primary)]/10 rounded-2xl shadow-lg border border-[var(--primary)]/20 flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
@@ -261,12 +264,12 @@ export default function Home() {
             </motion.div>
 
             {/* Feature 2 */}
-            <motion.div 
-               initial={{ opacity: 0, x: 20 }}
-               whileInView={{ opacity: 1, x: 0 }}
-               viewport={{ once: true }}
-               transition={{ duration: 0.5, delay: 0.1 }}
-               className="p-10 rounded-[2rem] bg-[var(--primary)] text-[var(--text)] shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="p-10 rounded-[2rem] bg-[var(--primary)] text-[var(--text)] shadow-xl hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
             >
               <Zap className="w-12 h-12 mb-6 text-[var(--text)]/90" />
               <h3 className="text-2xl font-bold mb-3">Instant Reviews</h3>
@@ -274,7 +277,7 @@ export default function Home() {
                 Zero setup time. Our Temporary Graph technology reviews new PRs immediately, even on first install.
               </p>
               <div className="w-full bg-[var(--text)]/20 h-1.5 rounded-full overflow-hidden">
-                <motion.div 
+                <motion.div
                   initial={{ width: 0 }}
                   whileInView={{ width: "100%" }}
                   transition={{ duration: 1.5, ease: "easeOut" }}
@@ -285,12 +288,12 @@ export default function Home() {
             </motion.div>
 
             {/* Feature 3 */}
-            <motion.div 
-               initial={{ opacity: 0, y: 20 }}
-               whileInView={{ opacity: 1, y: 0 }}
-               viewport={{ once: true }}
-               transition={{ duration: 0.5, delay: 0.2 }}
-               className="p-10 rounded-[2rem] bg-white border border-[var(--text)]/10 hover:border-red-200 hover:shadow-xl transition-all duration-500 group"
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="p-10 rounded-[2rem] bg-white border border-[var(--text)]/10 hover:border-red-200 hover:shadow-xl transition-all duration-500 group"
             >
               <div className="w-14 h-14 bg-red-100 rounded-2xl flex items-center justify-center mb-6 text-red-600 group-hover:rotate-12 transition-transform">
                 <Shield className="w-7 h-7" />
@@ -302,12 +305,12 @@ export default function Home() {
             </motion.div>
 
             {/* Feature 4 */}
-            <motion.div 
-               initial={{ opacity: 0, y: 20 }}
-               whileInView={{ opacity: 1, y: 0 }}
-               viewport={{ once: true }}
-               transition={{ duration: 0.5, delay: 0.3 }}
-               className="md:col-span-2 p-10 rounded-[2rem] bg-white border border-[var(--text)]/10 shadow-lg hover:shadow-2xl transition-all duration-500 relative overflow-hidden group"
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="md:col-span-2 p-10 rounded-[2rem] bg-white border border-[var(--text)]/10 shadow-lg hover:shadow-2xl transition-all duration-500 relative overflow-hidden group"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-[var(--background)] to-white opacity-50" />
               <div className="relative z-10 flex flex-col md:flex-row items-center gap-10">
@@ -325,17 +328,17 @@ export default function Home() {
                   </Button>
                 </div>
                 <div className="flex-1 w-full p-4 bg-[var(--text)] rounded-xl shadow-2xl border border-[var(--text)]/70 transform rotate-1 group-hover:rotate-0 transition-transform duration-500">
-                   <div className="flex gap-1.5 mb-3">
-                     <div className="w-3 h-3 rounded-full bg-red-500" />
-                     <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                     <div className="w-3 h-3 rounded-full bg-green-500" />
-                   </div>
-                   <div className="space-y-2 font-mono text-xs">
-                      <div className="text-[var(--accent)]">$ find functions using deprecated auth</div>
-                      <div className="text-[var(--background)]">Found 3 matches in 2 files...</div>
-                      <div className="text-[var(--primary)] pl-4">→ src/auth/login.ts:42</div>
-                      <div className="text-[var(--primary)] pl-4">→ src/api/user.ts:15</div>
-                   </div>
+                  <div className="flex gap-1.5 mb-3">
+                    <div className="w-3 h-3 rounded-full bg-red-500" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                    <div className="w-3 h-3 rounded-full bg-green-500" />
+                  </div>
+                  <div className="space-y-2 font-mono text-xs">
+                    <div className="text-[var(--accent)]">$ find functions using deprecated auth</div>
+                    <div className="text-[var(--background)]">Found 3 matches in 2 files...</div>
+                    <div className="text-[var(--primary)] pl-4">→ src/auth/login.ts:42</div>
+                    <div className="text-[var(--primary)] pl-4">→ src/api/user.ts:15</div>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -347,9 +350,9 @@ export default function Home() {
       <section id="how-it-works" className="py-32 bg-[var(--text)] text-white relative overflow-hidden">
         {/* Abstract shapes */}
         <div className="absolute top-0 left-0 w-full h-[500px] bg-gradient-to-b from-[var(--primary)]/20 to-transparent pointer-events-none" />
-        
+
         <div className="container mx-auto px-6 lg:px-8 relative z-10">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -362,7 +365,7 @@ export default function Home() {
               We've removed all the friction. You focus on coding, we handle the infrastructure.
             </p>
           </motion.div>
-          
+
           <div className="grid md:grid-cols-4 gap-8 max-w-7xl mx-auto">
             {[
               { num: 1, title: "1-Click Install", desc: "Install the GitHub App. Choose 'All Repos' or select specific ones.", icon: Github },
@@ -370,8 +373,8 @@ export default function Home() {
               { num: 3, title: "Open PR", desc: "Normal workflow. Just open a Pull Request as you always do.", icon: GitPullRequest },
               { num: 4, title: "Get Reviewed", desc: "AI posts high-context comments directly on your PR lines.", icon: Check },
             ].map((step, i) => (
-              <motion.div 
-                key={step.num} 
+              <motion.div
+                key={step.num}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -398,7 +401,7 @@ export default function Home() {
       {/* Pricing Section */}
       <section id="pricing" className="py-32 bg-[var(--background)]">
         <div className="container mx-auto px-6 lg:px-8">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -411,14 +414,14 @@ export default function Home() {
               Start for free. Scale when you need more power.
             </p>
           </motion.div>
-          
+
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto items-center">
             {/* Free Plan */}
-            <motion.div 
-               initial={{ opacity: 0, x: -20 }}
-               whileInView={{ opacity: 1, x: 0 }}
-               viewport={{ once: true }}
-               className="p-8 rounded-3xl bg-white border border-[var(--text)]/10 hover:shadow-xl transition-all"
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="p-8 rounded-3xl bg-white border border-[var(--text)]/10 hover:shadow-xl transition-all"
             >
               <h3 className="text-2xl font-bold mb-2 text-[var(--text)]">Hobby</h3>
               <div className="mb-6 flex items-baseline gap-1">
@@ -438,11 +441,11 @@ export default function Home() {
             </motion.div>
 
             {/* Pro Plan */}
-            <motion.div 
-               initial={{ opacity: 0, scale: 0.9 }}
-               whileInView={{ opacity: 1, scale: 1 }}
-               viewport={{ once: true }}
-               className="p-10 rounded-[2rem] bg-[var(--text)] text-white shadow-2xl relative z-10"
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="p-10 rounded-[2rem] bg-[var(--text)] text-white shadow-2xl relative z-10"
             >
               <div className="absolute top-0 right-0 p-8">
                 <div className="px-3 py-1 bg-[var(--primary)] text-[var(--text)] text-xs font-bold uppercase tracking-wide rounded-full">Popular</div>
@@ -464,16 +467,16 @@ export default function Home() {
                 ))}
               </ul>
               <Button href="/login" size="lg" className="w-full bg-[var(--primary)] hover:bg-[var(--primary)]/90 border-none text-[var(--text)]">
-                   Start 14-Day Trial
+                Start 14-Day Trial
               </Button>
             </motion.div>
-            
+
             {/* Enterprise Plan */}
-            <motion.div 
-               initial={{ opacity: 0, x: 20 }}
-               whileInView={{ opacity: 1, x: 0 }}
-               viewport={{ once: true }}
-               className="p-8 rounded-3xl bg-white border border-[var(--text)]/10 hover:shadow-xl transition-all"
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="p-8 rounded-3xl bg-white border border-[var(--text)]/10 hover:shadow-xl transition-all"
             >
               <h3 className="text-2xl font-bold mb-2 text-[var(--text)]">Enterprise</h3>
               <div className="mb-6 flex items-baseline gap-1">
@@ -496,15 +499,15 @@ export default function Home() {
 
       {/* Final CTA Section */}
       <section className="py-24 relative overflow-hidden">
-        <div className="absolute inset-0 bg-[var(--primary)]" />
+        <div className="absolute inset-0 bg-[var(--text)]" />
         <div className="absolute inset-0 bg-[url('/grid.svg')] opacity-20" />
-        
+
         <div className="container mx-auto px-6 lg:px-8 relative z-10 text-center text-white">
           <motion.div
-             initial={{ opacity: 0, scale: 0.9 }}
-             whileInView={{ opacity: 1, scale: 1 }}
-             viewport={{ once: true }}
-             className="max-w-3xl mx-auto space-y-8"
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="max-w-3xl mx-auto space-y-8"
           >
             <h2 className="text-4xl md:text-5xl font-bold">
               Ready to stop guessing?
@@ -512,9 +515,9 @@ export default function Home() {
             <p className="text-xl text-white/90 font-medium">
               Join thousands of developers who trust their code quality to Graph Bug.
             </p>
-            <Button href="/login" size="lg" className="bg-white text-[var(--text)] hover:bg-white/90 px-12 py-8 text-xl rounded-2xl shadow-xl">
-                 Get Instant Access
-                 <ArrowRight className="w-6 h-6 ml-2" />
+            <Button href="/login" size="lg" className="bg-white text-[var(--text)] hover:bg-white/90 px-8 py-4 text-lg md:px-12 md:py-8 md:text-xl rounded-2xl shadow-xl">
+              Get Instant Access
+              <ArrowRight className="w-5 h-5 md:w-6 md:h-6 ml-2" />
             </Button>
             <p className="text-sm text-white/80 opacity-80">
               No credit card required · Cancel anytime
@@ -527,9 +530,9 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-12 mb-12">
             <div>
               <div className="flex items-center gap-2 mb-6">
-                <img 
-                  src="/logo.png" 
-                  alt="Graph Bug Logo" 
+                <img
+                  src="/logo.png"
+                  alt="Graph Bug Logo"
                   className="w-8 h-8 rounded-lg"
                 />
                 <span className="font-bold text-xl text-[var(--text)]">Graph Bug</span>

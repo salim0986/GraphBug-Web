@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  Github, 
-  Plus, 
-  RefreshCw, 
+import {
+  Github,
+  Plus,
+  RefreshCw,
   Settings as SettingsIcon,
   CheckCircle2,
   AlertCircle,
@@ -19,7 +19,7 @@ interface Installation {
   accountLogin: string;
   accountType: string;
   repositorySelection: string;
-  installationId:string;
+  installationId: string;
   installationUrl: string;
   createdAt: string;
   updatedAt: string;
@@ -55,7 +55,7 @@ export default function InstallationsPage() {
         cache: 'no-store',
       });
       const data = await response.json();
-      
+
       setInstallations(data.installations || []);
       setRepositories(data.repositories || []);
     } catch (error) {
@@ -96,14 +96,14 @@ export default function InstallationsPage() {
               <Github className="w-10 h-10 text-[var(--primary)]" />
             </div>
           </div>
-          
+
           <h3 className="text-2xl font-bold text-[var(--text)] mb-3">
             No Installations Yet
           </h3>
           <p className="text-[var(--text)]/60 mb-8 max-w-md mx-auto">
             Install the Graph Bug GitHub App to start getting AI-powered code reviews on your pull requests.
           </p>
-          
+
           <Button
             href="https://github.com/settings/installations"
             size="lg"
@@ -112,7 +112,7 @@ export default function InstallationsPage() {
             <Plus className="w-5 h-5" />
             Manage GitHub App
           </Button>
-          
+
           <div className="mt-8 pt-8 border-t border-[var(--text)]/10">
             <p className="text-sm text-[var(--text)]/50 mb-4">What you'll get:</p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-2xl mx-auto text-left">
@@ -147,26 +147,26 @@ export default function InstallationsPage() {
   return (
     <div className="max-w-6xl space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-[var(--text)] mb-2">GitHub Installations</h2>
           <p className="text-[var(--text)]/70">
             Manage your GitHub App installations and connected repositories.
           </p>
         </div>
-        
-        <div className="flex gap-3">
+
+        <div className="flex items-center gap-3">
           <Button
             onClick={fetchInstallations}
             variant="outline"
-            className="gap-2"
+            className="gap-2 flex-1 md:flex-none"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh
           </Button>
           <Button
             href={`https://github.com/settings/installations`}
-            className="gap-2"
+            className="gap-2 flex-1 md:flex-none"
           >
             <Plus className="w-4 h-4" />
             Manage Installations
@@ -180,25 +180,25 @@ export default function InstallationsPage() {
           const reposForInstallation = repositories.filter(
             repo => repo.fullName.startsWith(installation.accountLogin + '/')
           );
-          
+
           return (
-            <div 
+            <div
               key={installation.id}
               className="bg-white rounded-2xl border border-[var(--text)]/10 p-6 hover:shadow-lg transition-shadow"
             >
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 bg-[var(--primary)]/10 rounded-xl flex items-center justify-center">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-6">
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 md:w-14 md:h-14 bg-[var(--primary)]/10 rounded-xl flex items-center justify-center shrink-0">
                     {installation.accountType === 'Organization' ? (
-                      <Users className="w-7 h-7 text-[var(--primary)]" />
+                      <Users className="w-6 h-6 md:w-7 md:h-7 text-[var(--primary)]" />
                     ) : (
-                      <Github className="w-7 h-7 text-[var(--primary)]" />
+                      <Github className="w-6 h-6 md:w-7 md:h-7 text-[var(--primary)]" />
                     )}
                   </div>
-                  
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-lg font-bold text-[var(--text)]">
+
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <h3 className="text-base md:text-lg font-bold text-[var(--text)] truncate">
                         {installation.accountLogin}
                       </h3>
                       <span className="px-2 py-0.5 bg-[var(--primary)]/10 text-[var(--primary)] text-xs font-semibold rounded-full">
@@ -206,19 +206,19 @@ export default function InstallationsPage() {
                       </span>
                     </div>
                     <p className="text-sm text-[var(--text)]/60">
-                      {installation.repositorySelection === 'all' 
-                        ? 'All repositories' 
+                      {installation.repositorySelection === 'all'
+                        ? 'All repositories'
                         : `${reposForInstallation.length} selected repositories`}
                     </p>
                   </div>
                 </div>
-                
-                <div className="flex gap-2">
+
+                <div className="flex gap-2 w-full md:w-auto">
                   <Button
                     variant="outline"
                     size="sm"
                     href={`https://github.com/settings/installations/${installation.installationId}`}
-                    className="gap-1.5"
+                    className="gap-1.5 w-full md:w-auto justify-center"
                   >
                     <SettingsIcon className="w-3.5 h-3.5" />
                     Configure
@@ -226,7 +226,7 @@ export default function InstallationsPage() {
                   </Button>
                 </div>
               </div>
-              
+
               {/* Permissions */}
               {installation.permissions && (
                 <div className="mb-4 p-3 bg-[var(--background)] rounded-lg">
@@ -238,7 +238,7 @@ export default function InstallationsPage() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {Object.entries(installation.permissions).map(([key, value]) => (
-                      <span 
+                      <span
                         key={key}
                         className="px-2 py-1 bg-white border border-[var(--text)]/10 rounded text-xs text-[var(--text)]/70"
                       >
@@ -248,7 +248,7 @@ export default function InstallationsPage() {
                   </div>
                 </div>
               )}
-              
+
               {/* Repositories */}
               {reposForInstallation.length > 0 && (
                 <div>
@@ -286,13 +286,13 @@ export default function InstallationsPage() {
                   </div>
                 </div>
               )}
-              
+
               <div className="mt-4 pt-4 border-t border-[var(--text)]/10">
                 <p className="text-xs text-[var(--text)]/50">
-                  Installed {new Date(installation.createdAt).toLocaleDateString('en-US', { 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                  Installed {new Date(installation.createdAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                   })}
                 </p>
               </div>

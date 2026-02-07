@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { 
-  GitBranch, 
-  AlertCircle, 
-  CheckCircle2, 
-  Clock, 
+import {
+  GitBranch,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
   RefreshCw,
   Github,
   Sparkles,
@@ -15,6 +15,7 @@ import {
 import InstallGitHub from "./install-github";
 import RepositoryList from "./repository-list";
 import Link from "next/link";
+import { motion } from "framer-motion";
 
 interface Stats {
   totalRepos: number;
@@ -60,34 +61,34 @@ export default function MainDashboard() {
     // FIX: Immediate fetch on mount, especially after GitHub redirect
     const urlParams = new URLSearchParams(window.location.search);
     const fromSetup = urlParams.has('setup') || urlParams.has('installation_id');
-    
+
     if (fromSetup) {
       console.log("[Dashboard] Detected GitHub setup redirect - forcing immediate refresh");
       // Clear URL parameters
       window.history.replaceState({}, '', window.location.pathname);
     }
-    
+
     // Immediate first fetch
     fetchData();
     checkApiKey();
-    
+
     // Faster polling after setup (5s for first minute, then 10s)
     const pollInterval = fromSetup ? 5000 : 10000;
     const interval = setInterval(() => {
       fetchData();
     }, pollInterval);
-    
+
     // If from setup, do extra aggressive polling for first 30 seconds
     if (fromSetup) {
       const aggressiveInterval = setInterval(() => {
         fetchData();
       }, 2000);
-      
+
       setTimeout(() => {
         clearInterval(aggressiveInterval);
       }, 30000);
     }
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -99,12 +100,12 @@ export default function MainDashboard() {
         cache: 'no-store',
       });
       const data = await response.json();
-      
+
       console.log("[Dashboard] Fetched repositories:", {
         installations: data.installations?.length,
         repositories: data.repositories?.length,
       });
-      
+
       setStats(data.stats || {});
       setRepositories(data.repositories || []);
       setInstallations(data.installations || []);
@@ -116,7 +117,7 @@ export default function MainDashboard() {
       setRefreshing(false);
     }
   }
-  
+
   async function manualRefresh() {
     setRefreshing(true);
     await fetchData();
@@ -205,11 +206,11 @@ export default function MainDashboard() {
                 Gemini API Key Required
               </h3>
               <p className="text-sm text-amber-800 mb-3">
-                To enable AI-powered code reviews, you need to add your own Gemini API key. 
+                To enable AI-powered code reviews, you need to add your own Gemini API key.
                 Graph Bug uses a Bring Your Own (BYO) system to ensure you have full control over your API usage and costs.
               </p>
               <div className="flex flex-wrap gap-3">
-                <Link 
+                <Link
                   href="/settings?tab=api"
                   className="inline-flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg transition-colors"
                 >
@@ -278,27 +279,29 @@ export default function MainDashboard() {
         {statsCards.map((card, index) => {
           const Icon = card.icon;
           return (
-            <div
+            <motion.div
               key={card.title}
-              className="group relative p-6 bg-white border border-[var(--text)]/5 hover:border-[var(--text)]/10 transition-all duration-300 overflow-hidden"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              className="group relative p-6 bg-white border border-[var(--text)]/5 hover:border-[var(--text)]/10 transition-all duration-300 overflow-hidden rounded-2xl shadow-sm hover:shadow-md"
             >
               {/* Subtle gradient background */}
               <div className="absolute inset-0 bg-gradient-to-br from-[var(--background)]/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              
+
               <div className="relative">
-                <div className="flex items-start justify-between mb-4">
-                  <div className={`p-2.5 bg-gradient-to-br from-[var(--background)] to-white border border-[var(--text)]/5 ${card.color}`}>
-                    <Icon className="w-5 h-5" strokeWidth={1.5} />
+                <div className="flex items-center justify-between mb-4">
+                  <div className={`p-3 rounded-xl bg-[var(--background)]/50 border border-[var(--text)]/5 ${card.color} group-hover:scale-110 transition-transform duration-300`}>
+                    <Icon className="w-5 h-5" strokeWidth={2} />
                   </div>
-                  <span className={`text-xs font-semibold tracking-wide px-2.5 py-1 ${
-                    card.changePositive 
-                      ? 'bg-[var(--primary)]/5 text-[var(--primary)] border border-[var(--primary)]/10' 
-                      : 'bg-red-50 text-red-600 border border-red-100'
-                  }`}>
+                  <span className={`text-xs font-bold tracking-wide px-2.5 py-1 rounded-full ${card.changePositive
+                    ? 'bg-green-50 text-green-700 border border-green-100'
+                    : 'bg-red-50 text-red-600 border border-red-100'
+                    }`}>
                     {card.change}
                   </span>
                 </div>
-                
+
                 <div>
                   <h3 className="text-3xl font-bold text-[var(--text)] mb-1 tracking-tight">
                     {card.value}
@@ -308,59 +311,71 @@ export default function MainDashboard() {
                   </p>
                 </div>
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Repository List - Takes up 2/3 */}
-        <div className="lg:col-span-2">
-           <RepositoryList repositories={repositories} onRefresh={manualRefresh} />
-        </div>
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.3 }}
+          className="lg:col-span-2"
+        >
+          <RepositoryList repositories={repositories} onRefresh={manualRefresh} />
+        </motion.div>
 
         {/* Sidebar - Installed Accounts */}
-        <div className="space-y-6">
-            <div className="bg-white border border-[var(--text)]/5 p-6">
-                <h3 className="font-semibold text-[var(--text)] mb-5 flex items-center gap-2.5 text-sm uppercase tracking-wide">
-                    <Github className="w-4 h-4" strokeWidth={2} />
-                    Connected Accounts
-                </h3>
-                 <div className="space-y-3">
-                  {installations.map((installation) => (
-                    <div
-                      key={installation.id}
-                      className="flex items-center justify-between p-4 bg-[var(--background)]/50 border border-[var(--text)]/5 hover:border-[var(--text)]/10 transition-colors"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 bg-[var(--text)] flex items-center justify-center text-white">
-                           <Github className="w-4 h-4" strokeWidth={2} />
-                        </div>
-                        <div className="overflow-hidden">
-                          <p className="font-semibold text-sm text-[var(--text)] truncate">{installation.accountLogin}</p>
-                          <p className="text-xs text-[var(--text)]/50 font-medium">
-                            {installation.repositorySelection === 'all' ? 'All repos' : 'Selected repos'}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="w-2 h-2 bg-[var(--primary)]" />
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.4 }}
+          className="space-y-6"
+        >
+          <div className="bg-white border border-[var(--text)]/5 p-6 rounded-2xl shadow-sm">
+            <h3 className="font-bold text-[var(--text)] mb-5 flex items-center gap-2.5 text-sm uppercase tracking-wide">
+              <Github className="w-4 h-4" strokeWidth={2.5} />
+              Connected Accounts
+            </h3>
+            <div className="space-y-3">
+              {installations.map((installation) => (
+                <div
+                  key={installation.id}
+                  className="flex items-center justify-between p-4 bg-[var(--background)]/50 border border-[var(--text)]/5 hover:border-[var(--primary)]/20 hover:bg-[var(--primary)]/5 rounded-xl transition-all cursor-default group"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-white border border-[var(--text)]/5 rounded-lg flex items-center justify-center text-[var(--text)] group-hover:scale-105 transition-transform shadow-sm">
+                      <Github className="w-5 h-5" strokeWidth={2} />
                     </div>
-                  ))}
+                    <div className="overflow-hidden">
+                      <p className="font-bold text-sm text-[var(--text)] truncate">{installation.accountLogin}</p>
+                      <p className="text-xs text-[var(--text)]/50 font-medium mt-0.5">
+                        {installation.repositorySelection === 'all' ? 'All repos' : 'Selected repos'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="w-2 h-2 rounded-full bg-[var(--success)] shadow-[0_0_8px_rgba(84,222,135,0.4)]" />
                 </div>
+              ))}
             </div>
+          </div>
 
-            <div className="bg-gradient-to-br from-[var(--primary)]/5 to-[var(--primary)]/10 border border-[var(--primary)]/20 p-6">
-                <h3 className="font-bold text-[var(--text)] mb-3 text-sm flex items-center gap-2">
-                    <div className="w-5 h-5 bg-[var(--primary)] flex items-center justify-center">
-                        <Sparkles className="w-3 h-3 text-[var(--text)]" strokeWidth={2.5} />
-                    </div>
-                    Pro Tip
-                </h3>
-                <p className="text-sm text-[var(--text)]/70 leading-relaxed">
-                    Graph Bug works best when you process your default branch first. This builds the complete knowledge graph before reviewing individual PRs.
-                </p>
-            </div>
-        </div>
+          <div className="bg-gradient-to-br from-[var(--primary)]/10 to-[var(--secondary)]/10 border border-[var(--primary)]/20 p-6 rounded-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 -mt-4 -mr-4 w-24 h-24 bg-[var(--primary)]/20 rounded-full blur-2xl" />
+
+            <h3 className="font-bold text-[var(--text)] mb-3 text-sm flex items-center gap-2 relative z-10">
+              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                <Sparkles className="w-4 h-4 text-[var(--primary)]" strokeWidth={2.5} />
+              </div>
+              Pro Tip
+            </h3>
+            <p className="text-sm text-[var(--text)]/70 leading-relaxed relative z-10">
+              Graph Bug works best when you process your default branch first. This builds the complete knowledge graph before reviewing individual PRs.
+            </p>
+          </div>
+        </motion.div>
       </div>
     </div>
   );
