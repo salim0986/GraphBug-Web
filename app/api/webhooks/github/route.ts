@@ -440,9 +440,25 @@ async function triggerAICodeReview(repoDbId: string, pullRequest: any, installat
     console.log(`   ➕ Additions: +${pullRequest.additions || 0}`);
     console.log(`   ➖ Deletions: -${pullRequest.deletions || 0}`);
     
-    // Trigger AI review workflow directly - let AI service handle data fetching
+    // Step 1: Build PR context with file contents
+    console.log(`🔨 Building full PR context with file contents...`);
+    const { GitHubAPIClient } = await import("@/lib/github-pr");
+    const { buildPRContext, prepareForAIReview } = await import("@/lib/pr-context");
+    
+    const client = new GitHubAPIClient(installationId);
+    const context = await buildPRContext(client, owner, repo, prNumber, {
+      includeFileContents: true,
+      includeCommits: true,
+      contextLines: 10,
+      maxFilesToFetch: 50,
+    });
+    
+    const aiContext = prepareForAIReview(context);
+    console.log(`✅ PR context built: ${aiContext.files.length} files with contents`);
+    
+    // Trigger AI review workflow with full context
     const aiServiceUrl = process.env.AI_SERVICE_URL || 'http://localhost:8000';
-    console.log(`🚀 Triggering AI review workflow in ai-service...`);
+    console.log(`🚀 Triggering AI review workflow with full context in ai-service...`);
     console.log(`   🌐 AI Service URL: ${aiServiceUrl}/review`);
     
     try {
@@ -454,9 +470,11 @@ async function triggerAICodeReview(repoDbId: string, pullRequest: any, installat
         repo_db_id: repoDbId,
         pull_request_id: prRecord.id,  // PR database UUID (matches AI service field name)
         gemini_api_key: geminiApiKey,
+        // CRITICAL: Include full context
+        context: aiContext,
       };
       
-      console.log(`   📦 Sending payload:`, {
+      console.log(`   📦 Sending payload with context:`, {
         owner,
         repo,
         pr_number: prNumber,
@@ -464,6 +482,8 @@ async function triggerAICodeReview(repoDbId: string, pullRequest: any, installat
         repo_db_id: repoDbId,
         pull_request_id: prRecord.id,
         has_gemini_key: !!geminiApiKey,
+        context_files: aiContext.files.length,
+        context_size_kb: Math.round(JSON.stringify(aiContext).length / 1024),
       });
       
       const reviewResponse = await fetch(`${aiServiceUrl}/review`, {
@@ -472,7 +492,7 @@ async function triggerAICodeReview(repoDbId: string, pullRequest: any, installat
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(reviewPayload),
-        signal: AbortSignal.timeout(10000), // 10 seconds - just to trigger the AI service
+        signal: AbortSignal.timeout(30000), // 30 seconds - increased for larger context
       });
 
       console.log(`   📡 AI service response status: ${reviewResponse.status} ${reviewResponse.statusText}`);

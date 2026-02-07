@@ -84,7 +84,7 @@ export default function ReviewDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary)]"></div>
       </div>
     );
   }
@@ -93,12 +93,12 @@ export default function ReviewDetailPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h1 className="text-xl font-semibold text-gray-900 mb-2">Failed to load review</h1>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <AlertCircle className="h-12 w-12 text-[var(--error)] mx-auto mb-4" />
+          <h1 className="text-xl font-semibold text-foreground mb-2">Failed to load review</h1>
+          <p className="text-muted-foreground mb-4">{error}</p>
           <button
             onClick={() => router.back()}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90"
           >
             Go Back
           </button>
@@ -109,20 +109,20 @@ export default function ReviewDetailPage() {
 
   const { review, comments, prDetails } = data;
   const severityColors = {
-    critical: "text-red-600 bg-red-50 border-red-200",
-    high: "text-orange-600 bg-orange-50 border-orange-200",
-    medium: "text-yellow-600 bg-yellow-50 border-yellow-200",
-    low: "text-blue-600 bg-blue-50 border-blue-200",
-    info: "text-gray-600 bg-gray-50 border-gray-200",
+    critical: "text-[var(--error)] bg-[var(--error)]/10 border-[var(--error)]/30",
+    high: "text-[var(--warning)] bg-[var(--warning)]/10 border-[var(--warning)]/30",
+    medium: "text-[var(--accent)] bg-[var(--accent)]/10 border-[var(--accent)]/30",
+    low: "text-[var(--primary)] bg-[var(--primary)]/10 border-[var(--primary)]/30",
+    info: "text-muted-foreground bg-muted/10 border-muted/20",
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-7xl">
+    <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
         <button
           onClick={() => router.push('/analytics/reviews')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          className="flex items-center text-muted-foreground hover:text-foreground mb-4"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Analytics
@@ -130,10 +130,10 @@ export default function ReviewDetailPage() {
 
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <h1 className="text-3xl font-bold text-foreground mb-2">
               PR #{review.prNumber}: {review.prTitle}
             </h1>
-            <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <FileCode className="h-4 w-4" />
                 {review.repositoryFullName}
@@ -155,7 +155,7 @@ export default function ReviewDetailPage() {
             href={prDetails.htmlUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90"
           >
             View on GitHub
           </a>
@@ -164,54 +164,54 @@ export default function ReviewDetailPage() {
 
       {/* Summary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-card p-6 rounded-lg border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Overall Score</p>
-              <p className="text-3xl font-bold text-gray-900">{review.summary.overallScore}</p>
+              <p className="text-sm text-muted-foreground mb-1">Overall Score</p>
+              <p className="text-3xl font-bold text-foreground">{review.summary.overallScore}</p>
             </div>
-            <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle className="h-6 w-6 text-green-600" />
+            <div className="h-12 w-12 rounded-full bg-[var(--success)]/10 flex items-center justify-center">
+              <CheckCircle className="h-6 w-6 text-[var(--success)]" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-card p-6 rounded-lg border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Issues Found</p>
-              <p className="text-3xl font-bold text-gray-900">{review.summary.issuesFound}</p>
+              <p className="text-sm text-muted-foreground mb-1">Issues Found</p>
+              <p className="text-3xl font-bold text-foreground">{review.summary.issuesFound}</p>
             </div>
-            <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
-              <AlertCircle className="h-6 w-6 text-red-600" />
+            <div className="h-12 w-12 rounded-full bg-[var(--error)]/10 flex items-center justify-center">
+              <AlertCircle className="h-6 w-6 text-[var(--error)]" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-card p-6 rounded-lg border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Execution Time</p>
-              <p className="text-3xl font-bold text-gray-900">
+              <p className="text-sm text-muted-foreground mb-1">Execution Time</p>
+              <p className="text-3xl font-bold text-foreground">
                 {review.executionTimeMs ? (review.executionTimeMs / 1000).toFixed(1) : "0.0"}s
               </p>
             </div>
-            <div className="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center">
-              <Clock className="h-6 w-6 text-blue-600" />
+            <div className="h-12 w-12 rounded-full bg-[var(--primary)]/10 flex items-center justify-center">
+              <Clock className="h-6 w-6 text-[var(--primary)]" />
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg border border-gray-200">
+        <div className="bg-card p-6 rounded-lg border">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600 mb-1">Cost</p>
-              <p className="text-3xl font-bold text-gray-900">
+              <p className="text-sm text-muted-foreground mb-1">Cost</p>
+              <p className="text-3xl font-bold text-foreground">
                 ${review.totalCost ? review.totalCost.toFixed(4) : "0.00"}
               </p>
             </div>
-            <div className="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center">
-              <DollarSign className="h-6 w-6 text-purple-600" />
+            <div className="h-12 w-12 rounded-full bg-[var(--accent)]/10 flex items-center justify-center">
+              <DollarSign className="h-6 w-6 text-[var(--accent)]" />
             </div>
           </div>
         </div>
@@ -219,44 +219,59 @@ export default function ReviewDetailPage() {
 
       {/* Issue Breakdown */}
       <div className="bg-white p-6 rounded-lg border border-gray-200 mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">Issue Breakdown</h2>
+        <h2 className="text-xl font-semibold text-foreground mb-4">Issue Breakdown</h2>
         <div className="flex gap-4">
-          {review.summary.critical > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded bg-red-600"></div>
-              <span className="text-sm">Critical: {review.summary.critical}</span>
-            </div>
-          )}
-          {review.summary.high > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded bg-orange-600"></div>
-              <span className="text-sm">High: {review.summary.high}</span>
-            </div>
-          )}
-          {review.summary.medium > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded bg-yellow-600"></div>
-              <span className="text-sm">Medium: {review.summary.medium}</span>
-            </div>
-          )}
-          {review.summary.low > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded bg-blue-600"></div>
-              <span className="text-sm">Low: {review.summary.low}</span>
-            </div>
-          )}
+          {(() => {
+            const s = review.summary || {} as any;
+            const issuesFound = Number(s.issuesFound ?? (
+              (Number(s.critical) || 0) + (Number(s.high) || 0) + (Number(s.medium) || 0) + (Number(s.low) || 0) + (Number(s.info) || 0)
+            ));
+
+            if (issuesFound === 0) {
+              return <div className="text-sm text-muted-foreground">No issues found</div>;
+            }
+
+            return (
+              <>
+                {Number(s.critical || 0) > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded bg-red-600"></div>
+                    <span className="text-sm">Critical: {s.critical}</span>
+                  </div>
+                )}
+                {Number(s.high || 0) > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded bg-orange-600"></div>
+                    <span className="text-sm">High: {s.high}</span>
+                  </div>
+                )}
+                {Number(s.medium || 0) > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded bg-yellow-600"></div>
+                    <span className="text-sm">Medium: {s.medium}</span>
+                  </div>
+                )}
+                {Number(s.low || 0) > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 w-4 rounded bg-blue-600"></div>
+                    <span className="text-sm">Low: {s.low}</span>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
       </div>
 
       {/* Key Changes */}
       {review.keyChanges && review.keyChanges.length > 0 && (
         <div className="bg-white p-6 rounded-lg border border-gray-200 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Key Changes</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">Key Changes</h2>
           <ul className="space-y-2">
             {review.keyChanges.map((change, idx) => (
               <li key={idx} className="flex items-start gap-2">
                 <span className="text-blue-600 mt-1">•</span>
-                <span className="text-gray-700">{change}</span>
+                <span className="text-muted-foreground">{change}</span>
               </li>
             ))}
           </ul>
@@ -266,12 +281,12 @@ export default function ReviewDetailPage() {
       {/* Recommendations */}
       {review.recommendations && review.recommendations.length > 0 && (
         <div className="bg-white p-6 rounded-lg border border-gray-200 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Recommendations</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">Recommendations</h2>
           <ul className="space-y-2">
             {review.recommendations.map((rec, idx) => (
               <li key={idx} className="flex items-start gap-2">
                 <span className="text-orange-600 mt-1">•</span>
-                <span className="text-gray-700">{rec}</span>
+                <span className="text-muted-foreground">{rec}</span>
               </li>
             ))}
           </ul>
@@ -281,12 +296,12 @@ export default function ReviewDetailPage() {
       {/* Positives */}
       {review.positives && review.positives.length > 0 && (
         <div className="bg-white p-6 rounded-lg border border-gray-200 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Positives</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-4">Positives</h2>
           <ul className="space-y-2">
             {review.positives.map((pos, idx) => (
               <li key={idx} className="flex items-start gap-2">
                 <CheckCircle className="h-5 w-5 text-green-600 mt-0.5" />
-                <span className="text-gray-700">{pos}</span>
+                <span className="text-muted-foreground">{pos}</span>
               </li>
             ))}
           </ul>
@@ -310,8 +325,8 @@ export default function ReviewDetailPage() {
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900">{comment.title}</h3>
-                    <p className="text-sm text-gray-600">
+                    <h3 className="font-semibold text-foreground">{comment.title}</h3>
+                    <p className="text-sm text-muted-foreground">
                       {comment.filePath}
                       {comment.startLine && comment.endLine && (
                         <> (Lines {comment.startLine}-{comment.endLine})</>
@@ -322,11 +337,11 @@ export default function ReviewDetailPage() {
                     {comment.severity.toUpperCase()}
                   </span>
                 </div>
-                <p className="text-gray-700 mb-2">{comment.message}</p>
+                <p className="text-muted-foreground mb-2">{comment.message}</p>
                 {comment.suggestion && (
                   <div className="mt-3 p-3 bg-white rounded border border-gray-200">
-                    <p className="text-sm font-medium text-gray-900 mb-1">Suggestion:</p>
-                    <p className="text-sm text-gray-700">{comment.suggestion}</p>
+                    <p className="text-sm font-medium text-foreground mb-1">Suggestion:</p>
+                    <p className="text-sm text-muted-foreground">{comment.suggestion}</p>
                   </div>
                 )}
               </div>

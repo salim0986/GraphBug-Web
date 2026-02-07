@@ -1,14 +1,24 @@
+import { auth } from '@/auth'
 import SignIn from '@/components/auth/sign-in'
+import Image from 'next/image'
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import React from 'react'
 
-export default function LoginPage() {
+export default async function LoginPage() {
+   const session = await auth()
+    
+    if (session?.user) {
+      redirect('/dashboard')
+    }
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Branding */}
       <div className="hidden lg:flex lg:w-1/2 bg-[var(--primary)] p-12 flex-col justify-between">
         <Link href="/" className="flex items-center gap-2 text-white">
-          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl"></div>
+          <div className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-xl">
+          <Image src="/logo.png" alt="Graph Bug Logo" width={40} height={40} className='object-contain'/>
+          </div>
           <span className="text-2xl font-bold">Graph Bug</span>
         </Link>
         

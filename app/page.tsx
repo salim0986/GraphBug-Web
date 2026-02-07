@@ -5,6 +5,7 @@ import { ArrowRight, Github, Sparkles, Network, Zap, Shield, Code2, GitPullReque
 import { motion, useScroll, useSpring, AnimatePresence, Variants } from "framer-motion";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { useSession } from "next-auth/react";
 
 const fadeInUp: Variants = {
   hidden: { opacity: 0, y: 30 },
@@ -23,6 +24,7 @@ const staggerContainer: Variants = {
 
 export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { data: session } = useSession();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
@@ -96,14 +98,14 @@ export default function Home() {
           </div>
           
           <div className="flex items-center gap-4">
-            <Link 
+            {!session?.user && <Link 
               href="/login" 
               className="hidden md:block px-5 py-2.5 text-sm font-semibold text-[var(--text)]/70 hover:text-[var(--primary)] transition-colors"
             >
               Sign In
-            </Link>
-            <Button href="/login" size="sm" className="hidden md:flex shadow-none">
-                Start For Free
+            </Link>}
+            <Button href={session?.user ? "/dashboard" : "/login"} size="sm" className="hidden md:flex shadow-none">
+                {session?.user ? "Go to Dashboard" : "Start For Free"}
                 <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
             <button className="md:hidden p-2 text-[var(--text)]/70" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -126,8 +128,12 @@ export default function Home() {
                 <Link href="#how-it-works" className="block text-[var(--text)]/70 font-medium" onClick={() => setIsMenuOpen(false)}>How It Works</Link>
                 <Link href="#pricing" className="block text-[var(--text)]/70 font-medium" onClick={() => setIsMenuOpen(false)}>Pricing</Link>
                 <div className="pt-4 border-t border-[var(--text)]/10 flex flex-col gap-3">
-                  <Link href="/login" className="block text-center py-2 text-[var(--text)]/70 font-semibold" onClick={() => setIsMenuOpen(false)}>Sign In</Link>
-                  <Button href="/login" onClick={() => setIsMenuOpen(false)} className="w-full">Get Started</Button>
+                  {session?.user ? (
+                    <Link href="/dashboard" className="block text-center py-2 text-[var(--text)]/70 font-semibold" onClick={() => setIsMenuOpen(false)}>Dashboard</Link>
+                  ) : (
+                    <Link href="/login" className="block text-center py-2 text-[var(--text)]/70 font-semibold" onClick={() => setIsMenuOpen(false)}>Sign In</Link>
+                  )}
+                  <Button href={session?.user ? "/dashboard" : "/login"} onClick={() => setIsMenuOpen(false)} className="w-full">Get Started</Button>
                 </div>
               </div>
             </motion.div>
