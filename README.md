@@ -163,6 +163,36 @@ Update your GitHub App webhook URL to the smee.io URL.
 6. **PR Opened** - When user opens PR, webhook triggers AI review
 7. **Review Posted** - AI analysis posted as PR comment
 
+## User Guide
+
+### 1. Getting Started
+1.  **Sign In**: Log in using your GitHub account.
+2.  **Install App**: Click "Manage GitHub App" in the dashboard to install the Graph Bug app on your desired repositories.
+3.  **Select Repositories**: In the dashboard, select the repositories you want AI to review and click "Ingest Selected". This builds the knowledge graph for your code.
+
+### 2. Bring Your Own Key (BYOK)
+Graph Bug operates on a "Bring Your Own Key" model for AI processing. This ensures you have full control over your usage and costs.
+
+**Why BYOK?**
+-   **Privacy**: Your API key is stored securely (encrypted) and only used for your reviews.
+-   **Cost Control**: You pay directly for what you use via your own Google Cloud/AI Studio billing.
+-   **Rate Limits**: You are not limited by a shared pool of quotas.
+
+**How to Configure:**
+1.  Go to **Settings** > **API Keys**.
+2.  Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey).
+3.  Enter the key (starts with `AIza...`) and click **Save**.
+
+> [!IMPORTANT]
+> The AI review functionality will **not** work until a valid Gemini API key is configured.
+
+### 3. Triggering Reviews
+Once set up, simply open a Pull Request in any connected repository.
+-   **Automatic**: The system detects the new PR.
+-   **Analysis**: It retrieves code context from the Knowledge Graph.
+-   **Review**: It uses Gemini (with your key) to generate a review.
+-   **Comment**: The review is posted as a comment on the PR.
+
 ## API Routes
 
 ### `GET /api/github/setup`
