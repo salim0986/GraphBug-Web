@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { MobileSidebar } from "@/components/dashboard/mobile-sidebar";
 import { useState, useEffect, useCallback } from "react";
@@ -13,16 +13,21 @@ export default function ProtectedLayout({
   children: React.ReactNode
 }) {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      redirect('/login');
+      router.push('/login');
     }
-  }, [status]);
+  }, [status, router]);
 
   if (status === "loading") {
-    return null;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[var(--background)]">
+        <div className="w-8 h-8 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
   }
 
   if (!session?.user) {
