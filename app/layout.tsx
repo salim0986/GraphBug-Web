@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Outfit, Inter } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "next-auth/react";
+import { auth } from "@/auth";
 
 const fontHeading = Outfit({
   variable: "--font-heading",
@@ -23,18 +24,24 @@ export const metadata: Metadata = {
 };
 
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Pass the server-side session to SessionProvider so the client hydrates
+  // with the correct session state immediately — prevents the hydration
+  // mismatch that triggered the "Something went wrong" error boundary on
+  // first login.
+  const session = await auth();
+
   return (
     <html lang="en" className="scroll-smooth">
       <body
         className={`${fontHeading.variable} ${fontBody.variable} antialiased bg-[var(--background)] text-[var(--text)] font-body`}
       >
-        <SessionProvider>
-        {children}
+        <SessionProvider session={session}>
+          {children}
         </SessionProvider>
       </body>
     </html>
