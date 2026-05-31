@@ -1,7 +1,17 @@
 // AI Service Integration Utility
 // Handles communication with the AI service backend
 
+import { signServiceRequest } from "@/lib/encryption";
+
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://localhost:8000';
+
+/** Build request headers including the optional HMAC service signature. */
+function _serviceHeaders(body: string): Record<string, string> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  const sig = signServiceRequest(body);
+  if (sig) headers["X-Service-Signature"] = sig;
+  return headers;
+}
 
 export interface IngestRequest {
   repo_url: string;
@@ -72,10 +82,11 @@ export async function ingestRepository(data: IngestRequest): Promise<{ status: s
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 120000);
 
+    const ingestBody = JSON.stringify(data);
     const response = await fetch(`${AI_SERVICE_URL}/ingest`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      headers: _serviceHeaders(ingestBody),
+      body: ingestBody,
       signal: controller.signal,
     });
 

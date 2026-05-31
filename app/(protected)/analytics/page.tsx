@@ -134,6 +134,15 @@ export default function AnalyticsPage() {
           href="/analytics/repositories"
           color="from-orange-500 to-orange-600"
         />
+
+        {/* Observability Section */}
+        <AnalyticsCard
+          title="Observability"
+          description="LLM token usage, cost, and p50/p95 review latency"
+          icon="📡"
+          href="/analytics/observability"
+          color="from-teal-500 to-teal-600"
+        />
       </div>
 
       {/* Repository Quick Access */}

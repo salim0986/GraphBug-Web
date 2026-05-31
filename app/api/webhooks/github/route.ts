@@ -2,6 +2,7 @@ import { db, githubInstallations, githubRepositories, users, pullRequests } from
 import { Webhooks } from "@octokit/webhooks";
 import { eq, and } from "drizzle-orm";
 import crypto from "crypto";
+import { decryptApiKey, signServiceRequest } from "@/lib/encryption";
 
 const webhooks = new Webhooks({
   secret: process.env.GITHUB_WEBHOOK_SECRET!,
@@ -302,20 +303,7 @@ async function handlePullRequestEvent(payload: any) {
   return new Response("OK", { status: 200 });
 }
 
-// Decrypt user's Gemini API key
-function decryptApiKey(encryptedText: string): string {
-  const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY || process.env.AUTH_SECRET || "default-key-change-in-production";
-  const ALGORITHM = "aes-256-cbc";
-  
-  const key = crypto.scryptSync(ENCRYPTION_KEY, "salt", 32);
-  const parts = encryptedText.split(":");
-  const iv = Buffer.from(parts[0], "hex");
-  const encryptedData = parts[1];
-  const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
-  let decrypted = decipher.update(encryptedData, "hex", "utf8");
-  decrypted += decipher.final("utf8");
-  return decrypted;
-}
+
 
 // Trigger AI-powered code review for a pull request
 async function triggerAICodeReview(repoDbId: string, pullRequest: any, installationId: number, userId: string | null) {
@@ -402,31 +390,58 @@ async function triggerAICodeReview(repoDbId: string, pullRequest: any, installat
       throw dbError; // Re-throw to be caught by outer try-catch
     }
     
-    // Fetch user's Gemini API key if userId exists
-    let geminiApiKey: string | null = null;
+    // M7: resolve provider + API key from user record.
+    // Priority: apiKeys[preferredProvider] → legacy geminiApiKey (gemini only).
+    let resolvedApiKey: string | null = null;
+    let resolvedProvider = "gemini";
+
     if (userId) {
       const [user] = await db
-        .select({ geminiApiKey: users.geminiApiKey })
+        .select({
+          geminiApiKey: users.geminiApiKey,
+          apiKeys: users.apiKeys,
+          preferredProvider: users.preferredProvider,
+        })
         .from(users)
         .where(eq(users.id, userId))
         .limit(1);
-      
-      if (user?.geminiApiKey) {
-        try {
-          geminiApiKey = decryptApiKey(user.geminiApiKey);
-          console.log(`✅ Using user's Gemini API key for review`);
-        } catch (error) {
-          console.error(`❌ Failed to decrypt user's API key:`, error);
+
+      resolvedProvider = user?.preferredProvider ?? "gemini";
+
+      // Try new multi-provider apiKeys column first
+      if (user?.apiKeys) {
+        const encryptedKey = (user.apiKeys as Record<string, string>)[resolvedProvider];
+        if (encryptedKey) {
+          try {
+            resolvedApiKey = decryptApiKey(encryptedKey);
+            console.log(`✅ Using user's ${resolvedProvider} API key (M7 apiKeys column)`);
+          } catch (err) {
+            console.error(`❌ Failed to decrypt ${resolvedProvider} key from apiKeys:`, err);
+          }
         }
-      } else {
-        console.warn(`⚠️ User ${userId} has no Gemini API key configured, review will be skipped`);
-        // Post a comment to the PR about missing API key
+      }
+
+      // Fall back to legacy geminiApiKey column for gemini provider
+      if (!resolvedApiKey && resolvedProvider === "gemini" && user?.geminiApiKey) {
+        try {
+          resolvedApiKey = decryptApiKey(user.geminiApiKey);
+          console.log(`✅ Using user's Gemini API key (legacy column)`);
+        } catch (err) {
+          console.error(`❌ Failed to decrypt legacy Gemini API key:`, err);
+        }
+      }
+
+      if (!resolvedApiKey) {
+        console.warn(`⚠️ User ${userId} has no API key for provider "${resolvedProvider}", review will be skipped`);
         return;
       }
     } else {
       console.warn(`⚠️ No user associated with installation ${installationId}, review will be skipped`);
       return;
     }
+
+    // Kept for backward compat with older ai-service deployments that only read gemini_api_key
+    const geminiApiKey = resolvedProvider === "gemini" ? resolvedApiKey : null;
     
     // Get PR details
     const prNumber = pullRequest.number;
@@ -468,7 +483,11 @@ async function triggerAICodeReview(repoDbId: string, pullRequest: any, installat
         pr_number: prNumber,
         installation_id: installationId.toString(),
         repo_db_id: repoDbId,
-        pull_request_id: prRecord.id,  // PR database UUID (matches AI service field name)
+        pull_request_id: prRecord.id,
+        // M7: provider-agnostic fields (ai-service prefers these)
+        provider: resolvedProvider,
+        api_key: resolvedApiKey,
+        // Legacy field for backward compat with older ai-service deployments
         gemini_api_key: geminiApiKey,
         // CRITICAL: Include full context
         context: aiContext,
@@ -486,13 +505,17 @@ async function triggerAICodeReview(repoDbId: string, pullRequest: any, installat
         context_size_kb: Math.round(JSON.stringify(aiContext).length / 1024),
       });
       
+      // M12: sign the request so ai-service can verify it came from us
+      const reviewBody = JSON.stringify(reviewPayload);
+      const serviceSig = signServiceRequest(reviewBody);
+      const reviewHeaders: Record<string, string> = { "Content-Type": "application/json" };
+      if (serviceSig) reviewHeaders["X-Service-Signature"] = serviceSig;
+
       const reviewResponse = await fetch(`${aiServiceUrl}/review`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(reviewPayload),
-        signal: AbortSignal.timeout(30000), // 30 seconds - increased for larger context
+        method: "POST",
+        headers: reviewHeaders,
+        body: reviewBody,
+        signal: AbortSignal.timeout(30000),
       });
 
       console.log(`   📡 AI service response status: ${reviewResponse.status} ${reviewResponse.statusText}`);

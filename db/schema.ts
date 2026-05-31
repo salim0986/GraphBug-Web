@@ -80,8 +80,13 @@ export const users = pgTable("user", {
   email: text("email").unique(),
   emailVerified: timestamp("emailVerified", { mode: "date" }),
   image: text("image"),
-  // User's own Gemini API key for BYO (Bring Your Own) system
+  // Legacy BYO Gemini key — kept for backward compat; prefer apiKeys below.
   geminiApiKey: text("gemini_api_key"),
+  // M7: provider-agnostic BYO keys stored as { provider: encryptedKey }.
+  // e.g. { "gemini": "enc:...", "anthropic": "enc:..." }
+  apiKeys: json("api_keys").$type<Record<string, string>>(),
+  // Which provider to use for this user (default "gemini").
+  preferredProvider: text("preferred_provider").default("gemini"),
 })
  
 // Links users to their OAuth providers
